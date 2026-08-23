@@ -15,11 +15,20 @@ export const TelemetryOverview: React.FC<TelemetryOverviewProps> = ({ telemetry,
   const syncPercent = (telemetry.verificationProgress * 100).toFixed(4);
   const formattedSolps = telemetry.solps > 0 ? telemetry.solps.toLocaleString() : 'Active (Equihash)';
 
+  // Format Chain Difficulty cleanly so large scientific targets never overflow cards
+  const formatDifficulty = (diff: number) => {
+    if (!diff || diff === 0) return '0.00';
+    if (diff > 1e12) {
+      return `${(diff / 1e34).toFixed(2)} × 10³⁴`;
+    }
+    return diff.toLocaleString(undefined, { maximumFractionDigits: 2 });
+  };
+
   const cards = [
     {
       title: 'Current Block Height',
-      value: telemetry.blockHeight.toLocaleString(),
-      subValue: `Target Tip: ~${telemetry.estimatedHeight.toLocaleString()}`,
+      value: telemetry.blockHeight > 0 ? `#${telemetry.blockHeight.toLocaleString()}` : '#0 (Syncing Mesh)',
+      subValue: telemetry.estimatedHeight > 0 ? `Target Tip: ~${telemetry.estimatedHeight.toLocaleString()}` : 'Connecting to Mainnet Peers...',
       icon: Layers,
       color: 'text-zcash-gold',
       bgGradient: 'from-amber-500/10 via-amber-500/5 to-transparent',
@@ -36,8 +45,8 @@ export const TelemetryOverview: React.FC<TelemetryOverviewProps> = ({ telemetry,
     },
     {
       title: 'Chain Difficulty',
-      value: Number(telemetry.difficulty).toLocaleString(undefined, { maximumFractionDigits: 2 }),
-      subValue: 'PoW Difficulty Target',
+      value: formatDifficulty(telemetry.difficulty),
+      subValue: telemetry.difficulty > 1e12 ? 'Mainnet Genesis PoW Target' : 'Current Mainnet PoW Target',
       icon: Hash,
       color: 'text-blue-400',
       bgGradient: 'from-blue-500/10 via-blue-500/5 to-transparent',
@@ -54,7 +63,7 @@ export const TelemetryOverview: React.FC<TelemetryOverviewProps> = ({ telemetry,
     },
     {
       title: 'Connected Peers',
-      value: `${telemetry.peerCount} Active`,
+      value: telemetry.peerCount > 0 ? `${telemetry.peerCount} Active` : 'Discovering Peers...',
       subValue: 'Zcash P2P Mesh',
       icon: Users,
       color: 'text-purple-400',
@@ -85,11 +94,11 @@ export const TelemetryOverview: React.FC<TelemetryOverviewProps> = ({ telemetry,
               <span className="text-sm font-bold text-white">Live Node Telemetry Feed</span>
               <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[11px] font-semibold text-emerald-400 border border-emerald-500/20">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                Live RPC
+                Mainnet Node Live
               </span>
             </div>
             <p className="text-xs text-zinc-400 mt-0.5">
-              Latest Block Hash: <span className="font-mono text-zinc-300 break-all">{telemetry.bestBlockHash || 'Fetching...'}</span>
+              Latest Block Hash: <span className="font-mono text-zinc-300 break-all">{telemetry.bestBlockHash || 'Fetching Genesis...'}</span>
             </p>
           </div>
         </div>
