@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Shield, Radio, Activity, Terminal, Layers, Users, RefreshCw, Zap } from '@/components/Icons';
+import { Shield, Radio, Activity, Terminal, Layers, Users, RefreshCw, Zap, Globe } from '@/components/Icons';
 import { TelemetrySummary } from '@/types/zcash';
 
 interface NavbarProps {
@@ -12,6 +12,8 @@ interface NavbarProps {
   onRefresh: () => void;
   autoRefresh: boolean;
   setAutoRefresh: (val: boolean) => void;
+  network: 'mainnet' | 'testnet';
+  setNetwork: (net: 'mainnet' | 'testnet') => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -22,6 +24,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   onRefresh,
   autoRefresh,
   setAutoRefresh,
+  network,
+  setNetwork,
 }) => {
   const isConnected = telemetry?.nodeConnected;
 
@@ -40,9 +44,29 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <span className="text-lg font-extrabold tracking-tight text-white">
                   Zec<span className="text-zcash-gold">Spectra</span>
                 </span>
-                <span className="rounded-full bg-zcash-gold/15 border border-zcash-gold/30 px-2 py-0.5 text-[10px] font-bold tracking-wider text-zcash-gold uppercase">
-                  {telemetry?.network?.toUpperCase() || 'MAINNET / TESTNET'}
-                </span>
+                {/* Network Switcher Pill */}
+                <div className="flex items-center rounded-full bg-zcash-navy border border-zcash-border p-0.5 text-[10px] font-bold">
+                  <button
+                    onClick={() => setNetwork('mainnet')}
+                    className={`px-2 py-0.5 rounded-full transition-all ${
+                      network === 'mainnet'
+                        ? 'bg-zcash-gold text-zcash-dark font-black shadow'
+                        : 'text-zinc-400 hover:text-white'
+                    }`}
+                  >
+                    MAINNET
+                  </button>
+                  <button
+                    onClick={() => setNetwork('testnet')}
+                    className={`px-2 py-0.5 rounded-full transition-all ${
+                      network === 'testnet'
+                        ? 'bg-zcash-gold text-zcash-dark font-black shadow'
+                        : 'text-zinc-400 hover:text-white'
+                    }`}
+                  >
+                    TESTNET
+                  </button>
+                </div>
               </div>
               <p className="text-[11px] text-zinc-400">Zcash Protocol Telemetry & RPC Studio</p>
             </div>
@@ -70,7 +94,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               }`}
             >
               <Zap className="h-4 w-4" />
-              Live TX Streamer
+              Live Streamer
             </button>
             <button
               onClick={() => setActiveTab('rpc')}
@@ -149,11 +173,11 @@ export const Navbar: React.FC<NavbarProps> = ({
               </div>
               <div className="flex flex-col">
                 <span className="text-[11px] font-bold text-zinc-100 leading-none">
-                  {isConnected ? 'Zebra Node Live' : 'Node Offline'}
+                  {isConnected ? `${network.toUpperCase()} Live` : 'Node Offline'}
                 </span>
                 {isConnected && (
                   <span className="text-[9px] text-zinc-400 leading-tight">
-                    {telemetry?.latencyMs}ms RPC ping
+                    {telemetry?.latencyMs}ms ping
                   </span>
                 )}
               </div>
@@ -174,7 +198,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             onClick={() => setActiveTab('streamer')}
             className={`text-xs px-2 py-1 rounded font-semibold whitespace-nowrap ${activeTab === 'streamer' ? 'text-zcash-gold' : 'text-zinc-400'}`}
           >
-            Live TX Streamer
+            Live Streamer
           </button>
           <button
             onClick={() => setActiveTab('rpc')}

@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Users, Globe, Radio, Shield, Clock } from '@/components/Icons';
+import { Users, Globe, Shield, Activity, Cpu } from '@/components/Icons';
 import { PeerInfo } from '@/types/zcash';
 
 interface PeerMapProps {
@@ -10,87 +10,72 @@ interface PeerMapProps {
 }
 
 export const PeerMap: React.FC<PeerMapProps> = ({ peers = [], peerCount }) => {
-  return (
-    <div className="space-y-6">
-      {/* Header Card */}
-      <div className="rounded-2xl border border-zinc-800 bg-zinc-950/70 p-6 backdrop-blur-md">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                <Globe className="h-4 w-4" />
-              </div>
-              <h2 className="text-lg font-bold text-white tracking-tight">Active Peer Network Mesh</h2>
-            </div>
-            <p className="text-xs text-zinc-400 mt-1">
-              Live Zcash nodes connected to your node via RPC method <code className="text-amber-400 font-mono">getpeerinfo</code>.
-            </p>
-          </div>
+  const safePeers = Array.isArray(peers) ? peers : [];
 
+  return (
+    <div className="rounded-2xl border border-zcash-border bg-zcash-card p-6 shadow-xl backdrop-blur-md space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zcash-border pb-4">
+        <div>
           <div className="flex items-center gap-2">
-            <span className="rounded-full bg-purple-500/10 border border-purple-500/20 px-3 py-1 text-xs font-semibold text-purple-300">
-              {peerCount} Connected Peers
+            <h3 className="text-base font-bold text-white tracking-tight">
+              Live Zcash Peer Network Mesh
+            </h3>
+            <span className="rounded-md bg-purple-500/15 px-2 py-0.5 text-[10px] font-bold text-purple-400 border border-purple-500/30 uppercase">
+              RPC: getpeerinfo
             </span>
           </div>
+          <p className="text-xs text-zinc-400 mt-1">
+            Active peer connections maintaining consensus across the global Zcash P2P network.
+          </p>
+        </div>
+
+        <div className="flex items-center gap-2 rounded-xl border border-zcash-border bg-zcash-navy px-4 py-2 text-xs font-mono">
+          <Globe className="h-4 w-4 text-zcash-gold" />
+          <span className="text-zinc-300">Active Peers:</span>
+          <span className="font-bold text-zcash-gold">{peerCount}</span>
         </div>
       </div>
 
-      {/* Peer Table */}
-      <div className="rounded-2xl border border-zinc-800 bg-zinc-950/70 overflow-hidden shadow-xl">
-        <div className="border-b border-zinc-800/80 bg-zinc-900/60 px-6 py-4 flex items-center justify-between">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-300">
-            P2P Connection Topology
-          </h3>
-          <span className="text-[11px] text-zinc-500">Auto-polled via Zebra RPC</span>
+      {safePeers.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-zcash-border p-12 text-center text-zinc-500">
+          <Users className="h-8 w-8 mx-auto mb-2 opacity-40 text-zcash-gold" />
+          <p className="text-xs font-semibold text-zinc-400">Discovering connected peers on Zcash P2P network...</p>
         </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+          {safePeers.map((peer, idx) => (
+            <div
+              key={peer.addr || idx}
+              className="flex flex-col justify-between rounded-xl border border-zcash-border/80 bg-zcash-navy/80 p-4 transition-all hover:border-zcash-gold/50"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div className="truncate">
+                  <span className="text-xs font-mono font-bold text-white truncate block">
+                    {peer.addr}
+                  </span>
+                  <span className="text-[10px] text-zinc-400 font-mono mt-0.5 block truncate">
+                    {peer.subver || 'Zcash P2P Node'}
+                  </span>
+                </div>
+                <span
+                  className={`shrink-0 rounded px-2 py-0.5 text-[9px] font-bold uppercase ${
+                    peer.inbound
+                      ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
+                      : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                  }`}
+                >
+                  {peer.inbound ? 'Inbound' : 'Outbound'}
+                </span>
+              </div>
 
-        {peers.length === 0 ? (
-          <div className="p-12 text-center text-zinc-500">
-            <Users className="h-8 w-8 mx-auto mb-2 opacity-40" />
-            <p className="text-xs">No peer details reported yet or node is discovering peers.</p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs font-mono">
-              <thead className="border-b border-zinc-800/60 bg-zinc-900/40 text-[11px] text-zinc-400 uppercase tracking-wider">
-                <tr>
-                  <th className="px-6 py-3">Peer Address</th>
-                  <th className="px-6 py-3">Client Subversion</th>
-                  <th className="px-6 py-3">Direction</th>
-                  <th className="px-6 py-3">Protocol Version</th>
-                  <th className="px-6 py-3">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-zinc-800/60 text-zinc-300">
-                {peers.map((peer, idx) => (
-                  <tr key={idx} className="hover:bg-zinc-900/30 transition-colors">
-                    <td className="px-6 py-3.5 font-bold text-amber-400/90">{peer.addr}</td>
-                    <td className="px-6 py-3.5 text-zinc-200">{peer.subver || '/Zebra/'}</td>
-                    <td className="px-6 py-3.5">
-                      <span
-                        className={`rounded px-2 py-0.5 text-[10px] font-semibold ${
-                          peer.inbound
-                            ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
-                            : 'bg-purple-500/10 text-purple-400 border border-purple-500/20'
-                        }`}
-                      >
-                        {peer.inbound ? 'INBOUND' : 'OUTBOUND'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-3.5 text-zinc-400">{peer.version}</td>
-                    <td className="px-6 py-3.5">
-                      <span className="inline-flex items-center gap-1.5 text-emerald-400 font-sans text-xs">
-                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                        Connected
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+              <div className="mt-4 flex items-center justify-between border-t border-zcash-border/60 pt-2 text-[10px] font-mono text-zinc-400">
+                <span>Peer #{idx + 1}</span>
+                <span>Ping: {peer.pingtime ? `${Math.round(peer.pingtime * 1000)}ms` : 'Active'}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

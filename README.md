@@ -1,89 +1,126 @@
-# 🛡️ ZecSpectra — Zcash Protocol Telemetry & RPC Studio
+<div align="center">
 
-> **Submission for the Zcash Mini Build Challenge (August 2026)**  
-> *A high-performance, real-time developer cockpit directly connected to a live Zcash Zebra node.*
+# 🛡️ ZecSpectra
+### Next-Gen Zero-Knowledge Telemetry & Interactive RPC Studio for Zcash
 
----
+[![Zcash Protocol](https://img.shields.io/badge/Zcash-Mainnet%20%26%20Testnet-F4B728?style=for-the-badge&logo=zcash&logoColor=black)](https://z.cash)
+[![JSON-RPC 2.0](https://img.shields.io/badge/JSON--RPC-2.0%20Verified-00D2FF?style=for-the-badge)](https://zcash.github.io/rpc/)
+[![Next.js 15](https://img.shields.io/badge/Next.js-15%20App%20Router-white?style=for-the-badge&logo=nextdotjs&logoColor=black)](https://nextjs.org)
+[![Vercel Deployed](https://img.shields.io/badge/Deploy-Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://vercel.com)
 
-## 🚀 Overview
+**ZecSpectra** is an interactive, real-time developer cockpit and zero-knowledge telemetry suite wired directly to the Zcash network. Built for the **Zcash Mini Build Challenge**, ZecSpectra delivers deep protocol observability, shielded value pool telemetry, real-time confirmed transaction streams, and an interactive raw JSON-RPC 2.0 laboratory with zero mock data.
 
-**ZecSpectra** is an interactive, real-time blockchain telemetry dashboard and JSON-RPC studio for the Zcash network. Built with **Next.js 14**, **TypeScript**, and **Tailwind CSS**, it communicates directly with a local or remote Zcash node (`zebrad` / `zcashd`) over JSON-RPC 2.0 without dummy data or mocked state.
-
-### 🌟 Key Features
-
-1. **Live Network Telemetry Dashboard:** Real-time stream of block height, network Sol/s (Equihash hashrate), target difficulty, mempool size/bytes, active peer count, and node verification progress with 5-second auto-polling.
-2. **Shielded & Transparent Pool Breakdown:** Visualizes circulating ZEC across zero-knowledge proving pools (**Sprout**, **Sapling**, **Orchard / Halo 2**, **Lockbox**, and **Transparent**).
-3. **Network Consensus Upgrades Tracker:** Monitors network upgrade activation heights (Overwinter, Sapling, Blossom, Heartwood, Canopy, NU5/Halo 2, NU6) and active consensus branch IDs.
-4. **Interactive Zcash RPC Studio:** An in-browser RPC playground allowing developers to execute arbitrary JSON-RPC 2.0 commands, test pre-configured queries, inspect raw responses, measure latency in milliseconds, and copy copy-pasteable `cURL` commands.
-5. **Block & Transaction Dissector:** Search any block by height or 64-character hash (`getblock` & `getblockhash`) with full header and transaction breakdown.
-6. **Peer Network Mesh:** Real-time table of connected P2P nodes, IP addresses, client subversions (e.g., `/Zebra:6.3.0/`), and protocol versions.
+[🚀 Live Demo Link](https://zecspectra-98i8n67jp-webghost01-ngs-projects.vercel.app) &bull; [📖 Submission Video](#) &bull; [🛠️ GitHub Repository](https://github.com/Webghost01-NG/zecspectra)
 
 ---
 
-## 📡 Zcash RPC Methods Used
+</div>
 
-ZecSpectra integrates **6+ native Zcash JSON-RPC methods**:
+## 🌟 Key Highlights & Why ZecSpectra Wins
 
-| RPC Method | Parameters | Description |
-| :--- | :--- | :--- |
-| `getblockchaininfo` | `[]` | Retrieves current block height, difficulty, verification progress, value pools (Sprout, Sapling, Orchard), and consensus upgrade activation status. |
-| `getpeerinfo` | `[]` | Lists all active connected P2P peers, network addresses, direction (inbound/outbound), and subversion. |
-| `getmempoolinfo` | `[]` | Returns unconfirmed transaction count, total memory footprint, and byte usage. |
-| `getnetworksolps` | `[]` | Fetches live Equihash solutions-per-second (network hashrate estimate). |
-| `getblock` | `[hash, 1]` | Fetches parsed block header, Merkle root, difficulty bits, timestamp, and transaction list. |
-| `getblockhash` | `[height]` | Resolves a block height to its canonical 64-character block hash. |
-| `getdeprecationinfo`| `[]` | Retrieves node client version, build details, and upgrade sunset height. |
-
----
-
-## 🛠️ Tech Stack & Architecture
-
-- **Frontend:** Next.js 14 (App Router), TypeScript, Tailwind CSS, Zero-dependency SVG Icon System.
-- **Backend API Layer:** Next.js Server Route Handlers (`/api/telemetry`, `/api/rpc`, `/api/block`) acting as a secure JSON-RPC proxy to avoid CORS and manage RPC credentials.
-- **Node Engine:** Official Zcash Foundation **Zebra** Rust Node (`zfnd/zebra:latest`) running via Docker on Testnet.
+1. **Dual Network Support (Mainnet & Testnet Switcher)**  
+   Switch between Zcash Mainnet (~2.8M+ blocks) and Testnet in real-time with one click.
+2. **Deep Shielded Pool Telemetry (Groth16 & Halo 2)**  
+   Live breakdown of circulating ZEC distribution across **Transparent**, **Sprout (Legacy ZK)**, **Sapling (Groth16)**, and **Orchard (Recursive Halo 2 without trusted setup)**.
+3. **Confirmed Transaction & Block Streamer**  
+   Inspect confirmed transactions mined in real-time on Zcash with privacy classification (Shielded Orchard/Sapling, Coinbase Rewards, and Transparent transfers).
+4. **Interactive JSON-RPC 2.0 Studio**  
+   Execute, benchmark latency, and inspect responses for any Zcash RPC method directly from the browser with preset templates.
+5. **Consensus Network Upgrade Tracker**  
+   Live verification of activation statuses for **Overwinter**, **Sapling**, **Blossom**, **Heartwood**, **Canopy**, **NU5**, **NU6**, and **NU6.1**.
+6. **100% Authentic Live Data**  
+   Zero dummy or simulated data. Every byte is queried live via JSON-RPC 2.0.
 
 ---
 
-## ⚡ How to Run Locally
+## ⚡ Verified RPC Integration (6+ Methods)
 
-### Prerequisites
-- [Docker](https://docs.docker.com/get-docker/) & Docker Compose
-- [Node.js](https://nodejs.org/) v18+ & npm
+ZecSpectra exceeds the challenge requirement (minimum 3 methods) with **6 verified RPC methods**:
 
-### Step 1: Start the Zcash Zebra Node
-Launch the Zebra node in background:
+| # | RPC Method | Category | Data Captured & Visualized |
+|---|------------|----------|-----------------------------|
+| 1 | `getblockchaininfo` | Blockchain | Height, best block hash, chain difficulty target, verification progress, and shielded value pools (`transparent`, `sprout`, `sapling`, `orchard`). |
+| 2 | `getpeerinfo` | Network Mesh | Connected global P2P nodes, IP addresses, subversions (`/Zebra:6.3.0/`), ping latency, and traffic direction. |
+| 3 | `getmempoolinfo` | Memory Pool | Live unconfirmed transaction count, byte size queue, and memory utilization. |
+| 4 | `getnetworksolps` | Mining Hashrate | Live Equihash (200,9) solution-per-second network computation rate. |
+| 5 | `getblock` | Block Dissector | Block header details, confirmations, Merkle roots, nonces, and full confirmed transaction arrays. |
+| 6 | `getblockhash` | Index Lookup | Height-to-hash resolution for historical block traversal. |
+
+---
+
+## 📐 Architecture & Technology Stack
+
+```mermaid
+graph TD
+    A[Next.js 15 Client Frontend] -->|REST / Realtime Polling| B[Next.js Serverless API Proxy]
+    B -->|JSON-RPC 2.0 POST| C[Zcash Zebra Node / Mainnet RPC Engine]
+    C -->|P2P Mesh Gossip| D[Zcash Global Network]
+    
+    subgraph UI Cockpit
+        E[Telemetry Dashboard]
+        F[Live Block Streamer]
+        G[Shielded Pool Meter]
+        H[Raw RPC Playground]
+        I[Block & TX Dissector]
+        J[P2P Mesh Explorer]
+    end
+    
+    A --> E
+    A --> F
+    A --> G
+    A --> H
+    A --> I
+    A --> J
+```
+
+- **Frontend:** Next.js 15 (App Router), React 19, TypeScript, Tailwind CSS v3 (Official Zcash Brand Palette `#F4B728`).
+- **Node Client:** Zebra Node (`zfnd/zebra:latest`) & JSON-RPC 2.0 HTTP Proxy with automatic serverless failover.
+- **Styling:** Custom Obsidian Dark glassmorphic design inspired by [z.cash](https://z.cash).
+
+---
+
+## 🚀 Quickstart & Local Development
+
+### 1. Clone & Install Dependencies
+```bash
+git clone https://github.com/Webghost01-NG/zecspectra.git
+cd zecspectra
+npm install
+```
+
+### 2. Run Local Zcash Zebra Node (Optional)
 ```bash
 docker compose up -d
 ```
-*The node will bind RPC to `http://localhost:18232` and begin syncing Zcash network blocks and peers immediately.*
 
-### Step 2: Start the ZecSpectra Web App
+### 3. Start Development Server
 ```bash
-npm install
 npm run dev
 ```
-
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+Open **`http://localhost:3000`** (or `http://localhost:3005`) in your browser.
 
 ---
 
-## 🧪 Verification / Live RPC Testing
+## 🌐 Production Deployment on Vercel
 
-You can verify that the node is running and returning real data via `curl`:
+ZecSpectra includes built-in dual-fallback resolution designed specifically for serverless hosting:
 
 ```bash
-# Query blockchain info
-curl -X POST http://127.0.0.1:18232 \
-  -H "Content-Type: application/json" \
-  -d '{"jsonrpc":"2.0","id":"1","method":"getblockchaininfo","params":[]}'
+npx vercel --prod
 ```
 
 ---
 
-## 🏆 Hackathon Criteria Compliance
+## 🏆 Hackathon Submission Checklist
 
-- ✅ **Landing Page:** Clean dark-mode developer console at `/`.
-- ✅ **Connect to a Zcash node:** Connected directly to a local Zebra node on `http://127.0.0.1:18232`.
-- ✅ **Use at least 3 RPC methods:** Uses 6+ methods (`getblockchaininfo`, `getpeerinfo`, `getmempoolinfo`, `getnetworksolps`, `getblock`, `getblockhash`).
-- ✅ **Display live blockchain data:** Auto-refreshing telemetry for block height, difficulty, mempool, Sol/s, shielded pools, and peers.
-- ✅ **README:** Comprehensive documentation and 1-command startup instructions included.
+- [x] **Landing Page:** Sleek, high-performance UI matching official Zcash design system.
+- [x] **Node Connection:** Direct JSON-RPC 2.0 communication with Zebra node & Mainnet fallback.
+- [x] **3+ RPC Methods:** 6 verified RPC methods implemented and benchmarked.
+- [x] **Live Data:** Real-time block heights, shielded pool balances, and live transaction stream.
+- [x] **Zero Mock Data:** 100% verified live network data.
+
+---
+
+<div align="center">
+Built with 💛 for the <b>Zcash Mini Build Challenge</b> by <a href="https://github.com/Webghost01-NG">Webghost01-NG</a>.
+</div>

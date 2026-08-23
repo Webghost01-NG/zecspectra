@@ -1,17 +1,18 @@
-import { BlockchainInfo, MempoolInfo, PeerInfo, RpcResponse, TelemetrySummary } from '@/types/zcash';
+import { RpcResponse } from '@/types/zcash';
 
-export const ZCASH_DEFAULT_LOCAL_RPC = 'http://127.0.0.1:8232';
-export const ZCASH_PUBLIC_FALLBACK_RPC = 'https://zcash.drpc.org';
+export const ZCASH_TESTNET_RPC = process.env.ZCASH_TESTNET_RPC || 'http://127.0.0.1:18232';
+export const ZCASH_MAINNET_RPC = process.env.ZCASH_MAINNET_RPC || 'https://zcash.drpc.org';
 
-export const ZCASH_DEFAULT_RPC = process.env.ZCASH_RPC_URL || ZCASH_DEFAULT_LOCAL_RPC;
+export const ZCASH_DEFAULT_RPC = process.env.ZCASH_RPC_URL || ZCASH_TESTNET_RPC;
 
 export async function callZcashRpc<T = any>(
   method: string,
   params: any[] = [],
-  rpcUrl: string = ZCASH_DEFAULT_RPC
+  network: 'mainnet' | 'testnet' = 'testnet'
 ): Promise<RpcResponse<T>> {
   const startTime = Date.now();
-  
+  const primaryUrl = network === 'mainnet' ? ZCASH_MAINNET_RPC : ZCASH_TESTNET_RPC;
+
   const tryRpcCall = async (targetUrl: string) => {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 6000);
@@ -47,23 +48,20 @@ export async function callZcashRpc<T = any>(
   };
 
   try {
-    const data = await tryRpcCall(rpcUrl);
+    const data = await tryRpcCall(primaryUrl);
     return {
       ...data,
       durationMs: Date.now() - startTime,
     };
   } catch (err: any) {
-    // If primary local URL fails, fallback to Mainnet RPC endpoint
-    if (rpcUrl === ZCASH_DEFAULT_LOCAL_RPC) {
+    if (network === 'testnet') {
       try {
-        const fallbackData = await tryRpcCall(ZCASH_PUBLIC_FALLBACK_RPC);
+        const fallbackData = await tryRpcCall(ZCASH_MAINNET_RPC);
         return {
           ...fallbackData,
           durationMs: Date.now() - startTime,
         };
-      } catch (fallbackErr: any) {
-        // Return original error if fallback also fails
-      }
+      } catch (fallbackErr) {}
     }
 
     const durationMs = Date.now() - startTime;

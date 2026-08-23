@@ -9,6 +9,8 @@ interface ShieldedPoolMeterProps {
 }
 
 export const ShieldedPoolMeter: React.FC<ShieldedPoolMeterProps> = ({ valuePools = [] }) => {
+  const safePools = Array.isArray(valuePools) ? valuePools : [];
+  
   const getPoolMeta = (id: string) => {
     switch (id.toLowerCase()) {
       case 'transparent':
@@ -74,7 +76,7 @@ export const ShieldedPoolMeter: React.FC<ShieldedPoolMeterProps> = ({ valuePools
     }
   };
 
-  const totalValue = valuePools.reduce((acc, p) => acc + (p.chainValue || 0), 0) || 1;
+  const totalValue = safePools.reduce((acc, p) => acc + (p?.chainValue || 0), 0) || 1;
 
   return (
     <div className="rounded-2xl border border-zcash-border bg-zcash-card p-6 shadow-xl backdrop-blur-md">
@@ -94,12 +96,11 @@ export const ShieldedPoolMeter: React.FC<ShieldedPoolMeterProps> = ({ valuePools
         </div>
       </div>
 
-      {/* Value Pools Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {valuePools.map((pool) => {
+        {safePools.map((pool) => {
           const meta = getPoolMeta(pool.id);
           const Icon = meta.icon;
-          const percentage = totalValue > 0 ? ((pool.chainValue / totalValue) * 100).toFixed(2) : '0.00';
+          const percentage = totalValue > 0 ? (((pool.chainValue || 0) / totalValue) * 100).toFixed(2) : '0.00';
 
           return (
             <div
@@ -125,7 +126,6 @@ export const ShieldedPoolMeter: React.FC<ShieldedPoolMeterProps> = ({ valuePools
                   <span className="text-xs font-bold text-zinc-300">{percentage}%</span>
                 </div>
 
-                {/* Progress bar */}
                 <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-zcash-navy">
                   <div
                     className={`h-full rounded-full ${meta.barColor} transition-all duration-500`}

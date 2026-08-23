@@ -1,15 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { callZcashRpc, ZCASH_DEFAULT_RPC } from '@/lib/zcash-rpc';
+import { callZcashRpc } from '@/lib/zcash-rpc';
 import { BlockchainInfo, MempoolInfo, PeerInfo, TelemetrySummary } from '@/types/zcash';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const rpcUrl = searchParams.get('rpcUrl') || ZCASH_DEFAULT_RPC;
+  const network = (searchParams.get('network') === 'mainnet' ? 'mainnet' : 'testnet') as 'mainnet' | 'testnet';
 
   try {
-    // Dispatch parallel RPC calls directly to the Zcash node
     const [
       blockchainRes,
       mempoolRes,
@@ -17,11 +16,11 @@ export async function GET(req: NextRequest) {
       solpsRes,
       deprecationRes
     ] = await Promise.all([
-      callZcashRpc<BlockchainInfo>('getblockchaininfo', [], rpcUrl),
-      callZcashRpc<MempoolInfo>('getmempoolinfo', [], rpcUrl),
-      callZcashRpc<PeerInfo[]>('getpeerinfo', [], rpcUrl),
-      callZcashRpc<number>('getnetworksolps', [], rpcUrl),
-      callZcashRpc<any>('getdeprecationinfo', [], rpcUrl),
+      callZcashRpc<BlockchainInfo>('getblockchaininfo', [], network),
+      callZcashRpc<MempoolInfo>('getmempoolinfo', [], network),
+      callZcashRpc<PeerInfo[]>('getpeerinfo', [], network),
+      callZcashRpc<number>('getnetworksolps', [], network),
+      callZcashRpc<any>('getdeprecationinfo', [], network),
     ]);
 
     const isConnected = !blockchainRes.error && !!blockchainRes.result;
@@ -29,8 +28,8 @@ export async function GET(req: NextRequest) {
 
     const summary: TelemetrySummary = {
       nodeConnected: isConnected,
-      nodeUrl: rpcUrl,
-      network: info?.chain || 'testnet',
+      nodeUrl: network === 'mainnet' ? 'Zcash Mainnet RPC' : 'Zcash Zebra Node (Testnet/Local)',
+      network: info?.chain || (network === 'mainnet' ? 'main' : 'test'),
       blockHeight: info?.blocks ?? 0,
       estimatedHeight: info?.estimatedheight ?? info?.headers ?? info?.blocks ?? 0,
       bestBlockHash: info?.bestblockhash ?? '',
@@ -52,8 +51,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(
       {
         nodeConnected: false,
-        nodeUrl: rpcUrl,
-        network: 'unknown',
+        nodeUrl: network,
+        network: network === 'mainnet' ? 'main' : 'test',
         blockHeight: 0,
         estimatedHeight: 0,
         bestBlockHash: '',

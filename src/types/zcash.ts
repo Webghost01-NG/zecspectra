@@ -106,3 +106,5 @@ export interface RpcResponse<T = any> {
   } | null;
   durationMs?: number;
 }
+
+export type ConsensusUpgrade = NetworkUpgrade;
