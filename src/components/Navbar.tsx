@@ -1,13 +1,13 @@
 'use client';
 
 import React from 'react';
-import { Shield, Radio, Activity, Terminal, Layers, Users, RefreshCw } from '@/components/Icons';
+import { Shield, Radio, Activity, Terminal, Layers, Users, RefreshCw, Zap } from '@/components/Icons';
 import { TelemetrySummary } from '@/types/zcash';
 
 interface NavbarProps {
   telemetry: TelemetrySummary | null;
-  activeTab: 'dashboard' | 'rpc' | 'explorer' | 'peers';
-  setActiveTab: (tab: 'dashboard' | 'rpc' | 'explorer' | 'peers') => void;
+  activeTab: 'dashboard' | 'streamer' | 'rpc' | 'explorer' | 'peers';
+  setActiveTab: (tab: 'dashboard' | 'streamer' | 'rpc' | 'explorer' | 'peers') => void;
   isLoading: boolean;
   onRefresh: () => void;
   autoRefresh: boolean;
@@ -41,7 +41,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   Zec<span className="text-zcash-gold">Spectra</span>
                 </span>
                 <span className="rounded-full bg-zcash-gold/15 border border-zcash-gold/30 px-2 py-0.5 text-[10px] font-bold tracking-wider text-zcash-gold uppercase">
-                  {telemetry?.network?.toUpperCase() || 'TESTNET'}
+                  {telemetry?.network?.toUpperCase() || 'MAINNET / TESTNET'}
                 </span>
               </div>
               <p className="text-[11px] text-zinc-400">Zcash Protocol Telemetry & RPC Studio</p>
@@ -52,7 +52,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <nav className="hidden md:flex items-center gap-1 bg-zcash-navy/90 p-1.5 rounded-xl border border-zcash-border">
             <button
               onClick={() => setActiveTab('dashboard')}
-              className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                 activeTab === 'dashboard'
                   ? 'bg-zcash-gold text-zcash-dark shadow-md shadow-zcash-gold/20 font-bold'
                   : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60'
@@ -62,8 +62,19 @@ export const Navbar: React.FC<NavbarProps> = ({
               Dashboard
             </button>
             <button
+              onClick={() => setActiveTab('streamer')}
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                activeTab === 'streamer'
+                  ? 'bg-zcash-gold text-zcash-dark shadow-md shadow-zcash-gold/20 font-bold'
+                  : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60'
+              }`}
+            >
+              <Zap className="h-4 w-4" />
+              Live TX Streamer
+            </button>
+            <button
               onClick={() => setActiveTab('rpc')}
-              className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                 activeTab === 'rpc'
                   ? 'bg-zcash-gold text-zcash-dark shadow-md shadow-zcash-gold/20 font-bold'
                   : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60'
@@ -74,7 +85,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
             <button
               onClick={() => setActiveTab('explorer')}
-              className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                 activeTab === 'explorer'
                   ? 'bg-zcash-gold text-zcash-dark shadow-md shadow-zcash-gold/20 font-bold'
                   : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60'
@@ -85,7 +96,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
             <button
               onClick={() => setActiveTab('peers')}
-              className={`flex items-center gap-2 px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                 activeTab === 'peers'
                   ? 'bg-zcash-gold text-zcash-dark shadow-md shadow-zcash-gold/20 font-bold'
                   : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60'
@@ -152,28 +163,34 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
 
         {/* Mobile Submenu Bar */}
-        <div className="flex md:hidden items-center justify-around py-2 border-t border-zcash-border">
+        <div className="flex md:hidden items-center justify-around py-2 border-t border-zcash-border overflow-x-auto">
           <button
             onClick={() => setActiveTab('dashboard')}
-            className={`text-xs px-2 py-1 rounded font-semibold ${activeTab === 'dashboard' ? 'text-zcash-gold' : 'text-zinc-400'}`}
+            className={`text-xs px-2 py-1 rounded font-semibold whitespace-nowrap ${activeTab === 'dashboard' ? 'text-zcash-gold' : 'text-zinc-400'}`}
           >
             Dashboard
           </button>
           <button
+            onClick={() => setActiveTab('streamer')}
+            className={`text-xs px-2 py-1 rounded font-semibold whitespace-nowrap ${activeTab === 'streamer' ? 'text-zcash-gold' : 'text-zinc-400'}`}
+          >
+            Live TX Streamer
+          </button>
+          <button
             onClick={() => setActiveTab('rpc')}
-            className={`text-xs px-2 py-1 rounded font-semibold ${activeTab === 'rpc' ? 'text-zcash-gold' : 'text-zinc-400'}`}
+            className={`text-xs px-2 py-1 rounded font-semibold whitespace-nowrap ${activeTab === 'rpc' ? 'text-zcash-gold' : 'text-zinc-400'}`}
           >
             RPC Studio
           </button>
           <button
             onClick={() => setActiveTab('explorer')}
-            className={`text-xs px-2 py-1 rounded font-semibold ${activeTab === 'explorer' ? 'text-zcash-gold' : 'text-zinc-400'}`}
+            className={`text-xs px-2 py-1 rounded font-semibold whitespace-nowrap ${activeTab === 'explorer' ? 'text-zcash-gold' : 'text-zinc-400'}`}
           >
             Explorer
           </button>
           <button
             onClick={() => setActiveTab('peers')}
-            className={`text-xs px-2 py-1 rounded font-semibold ${activeTab === 'peers' ? 'text-zcash-gold' : 'text-zinc-400'}`}
+            className={`text-xs px-2 py-1 rounded font-semibold whitespace-nowrap ${activeTab === 'peers' ? 'text-zcash-gold' : 'text-zinc-400'}`}
           >
             Peers
           </button>
