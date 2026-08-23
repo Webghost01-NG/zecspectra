@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  zebrad:
+    image: zfnd/zebra:latest
+    container_name: zecspectra-zebrad
+    restart: unless-stopped
+    ports:
+      - "18232:18232"
+      - "18233:18233"
+    volumes:
+      - ./zebra.toml:/etc/zebrad.toml:ro
+      - zebra_cache:/home/zebra/.cache/zebra
+    command: ["zebrad", "-c", "/etc/zebrad.toml", "start"]
+
+volumes:
+  zebra_cache:
