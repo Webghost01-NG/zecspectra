@@ -16,10 +16,10 @@ export const ShieldedPoolMeter: React.FC<ShieldedPoolMeterProps> = ({ valuePools
           name: 'Transparent Pool',
           desc: 't-addresses (public unshielded balances)',
           icon: Box,
-          color: 'text-amber-400',
+          color: 'text-zcash-gold',
           bgColor: 'bg-amber-500/10',
           borderColor: 'border-amber-500/30',
-          barColor: 'bg-amber-400',
+          barColor: 'bg-zcash-gold',
         };
       case 'sprout':
         return {
@@ -46,10 +46,10 @@ export const ShieldedPoolMeter: React.FC<ShieldedPoolMeterProps> = ({ valuePools
           name: 'Orchard Pool (Halo 2)',
           desc: 'Trustless recursive zero-knowledge (No trusted setup)',
           icon: Sparkles,
-          color: 'text-emerald-400',
-          bgColor: 'bg-emerald-500/10',
-          borderColor: 'border-emerald-500/30',
-          barColor: 'bg-emerald-400',
+          color: 'text-zcash-shield',
+          bgColor: 'bg-cyan-500/10',
+          borderColor: 'border-cyan-500/30',
+          barColor: 'bg-zcash-shield',
         };
       case 'lockbox':
         return {
@@ -77,14 +77,14 @@ export const ShieldedPoolMeter: React.FC<ShieldedPoolMeterProps> = ({ valuePools
   const totalValue = valuePools.reduce((acc, p) => acc + (p.chainValue || 0), 0) || 1;
 
   return (
-    <div className="rounded-2xl border border-zinc-800 bg-zinc-950/70 p-6 shadow-xl backdrop-blur-md">
+    <div className="rounded-2xl border border-zcash-border bg-zcash-card p-6 shadow-xl backdrop-blur-md">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-6">
         <div>
           <div className="flex items-center gap-2">
             <h3 className="text-base font-bold text-white tracking-tight">
               Zcash Shielded & Transparent Pool Distribution
             </h3>
-            <span className="rounded-md bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold text-amber-400 border border-amber-500/20">
+            <span className="rounded-md bg-zcash-gold/15 px-2 py-0.5 text-[10px] font-bold text-zcash-gold border border-zcash-gold/30 uppercase">
               RPC: getblockchaininfo
             </span>
           </div>
@@ -104,12 +104,12 @@ export const ShieldedPoolMeter: React.FC<ShieldedPoolMeterProps> = ({ valuePools
           return (
             <div
               key={pool.id}
-              className={`flex flex-col justify-between rounded-xl border ${meta.borderColor} ${meta.bgColor} p-4 transition-all hover:border-zinc-500/50`}
+              className={`flex flex-col justify-between rounded-xl border ${meta.borderColor} ${meta.bgColor} p-4 transition-all hover:border-zcash-gold/50`}
             >
               <div>
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-zinc-200">{meta.name}</span>
-                  <div className={`p-1.5 rounded-lg border border-zinc-800 bg-zinc-900/60 ${meta.color}`}>
+                  <span className="text-xs font-bold text-zinc-200">{meta.name}</span>
+                  <div className={`p-1.5 rounded-lg border border-zcash-border bg-zcash-navy ${meta.color}`}>
                     <Icon className="h-4 w-4" />
                   </div>
                 </div>
@@ -118,15 +118,15 @@ export const ShieldedPoolMeter: React.FC<ShieldedPoolMeterProps> = ({ valuePools
 
               <div className="mt-4">
                 <div className="flex items-baseline justify-between">
-                  <span className="text-lg font-bold text-white font-mono">
+                  <span className="text-lg font-extrabold text-white font-mono">
                     {pool.chainValue ? pool.chainValue.toLocaleString(undefined, { maximumFractionDigits: 4 }) : '0.00'}{' '}
                     <span className="text-xs font-normal text-zinc-400">ZEC</span>
                   </span>
-                  <span className="text-xs font-semibold text-zinc-300">{percentage}%</span>
+                  <span className="text-xs font-bold text-zinc-300">{percentage}%</span>
                 </div>
 
                 {/* Progress bar */}
-                <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-zinc-900">
+                <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-zcash-navy">
                   <div
                     className={`h-full rounded-full ${meta.barColor} transition-all duration-500`}
                     style={{ width: `${Math.max(parseFloat(percentage), pool.chainValue > 0 ? 3 : 0)}%` }}
