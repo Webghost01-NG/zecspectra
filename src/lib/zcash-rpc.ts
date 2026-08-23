@@ -1,6 +1,6 @@
 import { BlockchainInfo, MempoolInfo, PeerInfo, RpcResponse, TelemetrySummary } from '@/types/zcash';
 
-export const ZCASH_DEFAULT_LOCAL_RPC = 'http://127.0.0.1:18232';
+export const ZCASH_DEFAULT_LOCAL_RPC = 'http://127.0.0.1:8232';
 export const ZCASH_PUBLIC_FALLBACK_RPC = 'https://zcash.drpc.org';
 
 export const ZCASH_DEFAULT_RPC = process.env.ZCASH_RPC_URL || ZCASH_DEFAULT_LOCAL_RPC;
@@ -12,7 +12,6 @@ export async function callZcashRpc<T = any>(
 ): Promise<RpcResponse<T>> {
   const startTime = Date.now();
   
-  // Primary RPC execution function
   const tryRpcCall = async (targetUrl: string) => {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 6000);
@@ -54,7 +53,7 @@ export async function callZcashRpc<T = any>(
       durationMs: Date.now() - startTime,
     };
   } catch (err: any) {
-    // If primary local URL fails (e.g. in Vercel serverless environment), try public fallback node
+    // If primary local URL fails, fallback to Mainnet RPC endpoint
     if (rpcUrl === ZCASH_DEFAULT_LOCAL_RPC) {
       try {
         const fallbackData = await tryRpcCall(ZCASH_PUBLIC_FALLBACK_RPC);
@@ -63,7 +62,7 @@ export async function callZcashRpc<T = any>(
           durationMs: Date.now() - startTime,
         };
       } catch (fallbackErr: any) {
-        // Continue to return error below
+        // Return original error if fallback also fails
       }
     }
 

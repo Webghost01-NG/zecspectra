@@ -1,67 +1,49 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Radio, Zap, Copy, Check, Shield, Database, Activity, ArrowRight, EyeOff } from '@/components/Icons';
+import { Radio, Zap, Copy, Check, Shield, Database, Activity, EyeOff, Layers } from '@/components/Icons';
 
-interface TxItem {
+interface ConfirmedTxItem {
   txid: string;
+  height: number;
+  blockHash: string;
   time: string;
-  size?: number;
-  fee?: number;
-  type: 'shielded' | 'transparent' | 'mixed';
+  isCoinbase: boolean;
+  type: 'coinbase' | 'shielded' | 'transparent';
 }
 
 export const LiveTxStreamer: React.FC = () => {
   const [isListening, setIsListening] = useState<boolean>(true);
-  const [transactions, setTransactions] = useState<TxItem[]>([]);
-  const [mempoolStats, setMempoolStats] = useState<{ size: number; bytes: number }>({ size: 0, bytes: 0 });
+  const [transactions, setTransactions] = useState<ConfirmedTxItem[]>([]);
+  const [blockHeight, setBlockHeight] = useState<number>(0);
+  const [bestHash, setBestHash] = useState<string>('');
   const [copiedTx, setCopiedTx] = useState<string | null>(null);
+  const [txCount, setTxCount] = useState<number>(0);
 
-  const fetchMempoolTxs = async () => {
+  const fetchConfirmedStream = async () => {
     try {
-      // 1. Query mempool info
-      const infoRes = await fetch('/api/rpc', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ method: 'getmempoolinfo', params: [] }),
-      });
-      const infoData = await infoRes.json();
-      if (infoData.result) {
-        setMempoolStats({
-          size: infoData.result.size || 0,
-          bytes: infoData.result.bytes || 0,
-        });
-      }
-
-      // 2. Query raw mempool transaction IDs
-      const rawRes = await fetch('/api/rpc', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ method: 'getrawmempool', params: [false] }),
-      });
-      const rawData = await rawRes.json();
-
-      if (Array.isArray(rawData.result) && rawData.result.length > 0) {
-        const newItems: TxItem[] = rawData.result.slice(0, 15).map((txid: string, idx: number) => ({
-          txid,
-          time: new Date().toLocaleTimeString(),
-          size: Math.floor(Math.random() * 800) + 200,
-          type: idx % 3 === 0 ? 'shielded' : idx % 2 === 0 ? 'mixed' : 'transparent',
-        }));
-        setTransactions(newItems);
+      const res = await fetch('/api/tx-stream');
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data.transactions)) {
+          setTransactions(data.transactions);
+          setBlockHeight(data.blockHeight || 0);
+          setBestHash(data.bestHash || '');
+          setTxCount(data.txCount || data.transactions.length);
+        }
       }
     } catch (e) {
-      console.error('Failed to poll live mempool stream:', e);
+      console.error('Failed to poll confirmed block transaction stream:', e);
     }
   };
 
   useEffect(() => {
-    fetchMempoolTxs();
+    fetchConfirmedStream();
     if (!isListening) return;
 
     const interval = setInterval(() => {
-      fetchMempoolTxs();
-    }, 3000);
+      fetchConfirmedStream();
+    }, 4000);
 
     return () => clearInterval(interval);
   }, [isListening]);
@@ -82,23 +64,23 @@ export const LiveTxStreamer: React.FC = () => {
               <Activity className="h-4 w-4 animate-pulse" />
             </div>
             <h3 className="text-base font-bold text-white tracking-tight">
-              Live Zcash Transaction Listener (Mempool Stream)
+              Zcash Mainnet Confirmed Transaction Listener
             </h3>
             <span className="rounded-md bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-bold text-emerald-400 border border-emerald-500/20 uppercase tracking-wider">
-              RPC Stream
+              Confirmed Block Stream
             </span>
           </div>
           <p className="text-xs text-zinc-400 mt-1">
-            Real-time listener polling unconfirmed transactions directly from the network mempool.
+            Real-time listener pulling confirmed mainnet transactions directly from the latest mined block (<span className="font-mono text-zinc-200">#{blockHeight}</span>).
           </p>
         </div>
 
-        {/* Stream Toggle & Stats */}
+        {/* Stream Toggle & Block Height Badge */}
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 rounded-xl border border-zcash-border bg-zcash-navy px-3 py-1.5 text-xs font-mono text-zinc-300">
-            <Database className="h-3.5 w-3.5 text-zcash-gold" />
-            <span>{mempoolStats.size} Txs in Mempool</span>
-            <span className="text-zinc-500">({(mempoolStats.bytes / 1024).toFixed(1)} KB)</span>
+          <div className="flex items-center gap-2 rounded-xl border border-zcash-border bg-zcash-navy px-3.5 py-1.5 text-xs font-mono text-zinc-300">
+            <Layers className="h-3.5 w-3.5 text-zcash-gold" />
+            <span>Block #{blockHeight}</span>
+            <span className="text-zcash-gold font-bold">({txCount} TXs)</span>
           </div>
 
           <button
@@ -110,7 +92,7 @@ export const LiveTxStreamer: React.FC = () => {
             }`}
           >
             <Radio className={`h-3.5 w-3.5 ${isListening ? 'animate-ping text-emerald-400' : ''}`} />
-            <span>{isListening ? 'Listening (3s)' : 'Paused'}</span>
+            <span>{isListening ? 'Streaming (4s)' : 'Paused'}</span>
           </button>
         </div>
       </div>
@@ -119,23 +101,20 @@ export const LiveTxStreamer: React.FC = () => {
       {transactions.length === 0 ? (
         <div className="rounded-xl border border-dashed border-zcash-border p-12 text-center text-zinc-500">
           <Zap className="h-8 w-8 mx-auto mb-2 opacity-40 text-zcash-gold" />
-          <p className="text-xs font-semibold text-zinc-400">Mempool is currently empty (0 unconfirmed Txs)</p>
-          <p className="text-[11px] text-zinc-500 mt-1">
-            Listening for new transactions broadcast to Zcash node mempool...
-          </p>
+          <p className="text-xs font-semibold text-zinc-400">Polling confirmed block transactions...</p>
         </div>
       ) : (
         <div className="space-y-2.5">
           <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-zinc-400 px-3">
-            <span>Transaction Hash</span>
+            <span>Confirmed Transaction Hash</span>
             <div className="flex items-center gap-6">
-              <span>Pool / Privacy</span>
-              <span>Timestamp</span>
+              <span>Status / Type</span>
+              <span>Block Height</span>
             </div>
           </div>
 
           <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
-            {transactions.map((tx) => (
+            {transactions.map((tx, idx) => (
               <div
                 key={tx.txid}
                 className="flex items-center justify-between rounded-xl border border-zcash-border/80 bg-zcash-navy/80 p-3 text-xs font-mono transition-all hover:border-zcash-gold/50"
@@ -162,15 +141,20 @@ export const LiveTxStreamer: React.FC = () => {
 
                 <div className="flex items-center gap-6 shrink-0">
                   <span
-                    className={`inline-flex items-center gap-1 rounded px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
-                      tx.type === 'shielded'
-                        ? 'bg-cyan-500/10 text-zcash-shield border border-cyan-500/30'
-                        : tx.type === 'mixed'
-                        ? 'bg-purple-500/10 text-purple-400 border border-purple-500/30'
-                        : 'bg-amber-500/10 text-zcash-gold border border-amber-500/30'
+                    className={`inline-flex items-center gap-1 rounded px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+                      tx.isCoinbase
+                        ? 'bg-purple-500/15 text-purple-300 border border-purple-500/30'
+                        : tx.type === 'shielded'
+                        ? 'bg-cyan-500/15 text-zcash-shield border border-cyan-500/30'
+                        : 'bg-amber-500/15 text-zcash-gold border border-amber-500/30'
                     }`}
                   >
-                    {tx.type === 'shielded' ? (
+                    {tx.isCoinbase ? (
+                      <>
+                        <Shield className="h-3 w-3" />
+                        Coinbase Reward
+                      </>
+                    ) : tx.type === 'shielded' ? (
                       <>
                         <EyeOff className="h-3 w-3" />
                         Shielded (Orchard/Sapling)
@@ -178,12 +162,14 @@ export const LiveTxStreamer: React.FC = () => {
                     ) : (
                       <>
                         <Shield className="h-3 w-3" />
-                        {tx.type === 'mixed' ? 'Shielded Deshield' : 'Transparent (t-addr)'}
+                        Transparent Transfer
                       </>
                     )}
                   </span>
 
-                  <span className="text-[11px] text-zinc-400">{tx.time}</span>
+                  <span className="text-[11px] font-bold text-zinc-300">
+                    Block #{tx.height}
+                  </span>
                 </div>
               </div>
             ))}

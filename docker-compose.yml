@@ -6,8 +6,8 @@ services:
     container_name: zecspectra-zebrad
     restart: unless-stopped
     ports:
-      - "18232:18232"
-      - "18233:18233"
+      - "8232:8232"
+      - "8233:8233"
     volumes:
       - ./zebra.toml:/etc/zebrad.toml:ro
       - zebra_cache:/home/zebra/.cache/zebra
