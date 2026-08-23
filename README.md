@@ -3,14 +3,14 @@
 # 🛡️ ZecSpectra
 ### Next-Gen Zero-Knowledge Telemetry & Interactive RPC Studio for Zcash
 
+[![Live on Vercel](https://img.shields.io/badge/Live%20Demo-zecspectra.vercel.app-F4B728?style=for-the-badge&logo=vercel&logoColor=black)](https://zecspectra.vercel.app)
 [![Zcash Protocol](https://img.shields.io/badge/Zcash-Mainnet%20%26%20Testnet-F4B728?style=for-the-badge&logo=zcash&logoColor=black)](https://z.cash)
 [![JSON-RPC 2.0](https://img.shields.io/badge/JSON--RPC-2.0%20Verified-00D2FF?style=for-the-badge)](https://zcash.github.io/rpc/)
 [![Next.js 15](https://img.shields.io/badge/Next.js-15%20App%20Router-white?style=for-the-badge&logo=nextdotjs&logoColor=black)](https://nextjs.org)
-[![Vercel Deployed](https://img.shields.io/badge/Deploy-Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://vercel.com)
 
-**ZecSpectra** is an interactive, real-time developer cockpit and zero-knowledge telemetry suite wired directly to the Zcash network. Built for the **Zcash Mini Build Challenge**, ZecSpectra delivers deep protocol observability, shielded value pool telemetry, real-time confirmed transaction streams, and an interactive raw JSON-RPC 2.0 laboratory with zero mock data.
+**ZecSpectra** is an interactive, real-time developer cockpit and zero-knowledge telemetry suite wired directly to the Zcash network. Built for the **Zcash Mini Build Challenge**, ZecSpectra delivers deep protocol observability, shielded value pool telemetry, real-time block transaction streams, and an interactive raw JSON-RPC 2.0 laboratory with zero mock data.
 
-[🚀 Live Demo Link](https://zecspectra-98i8n67jp-webghost01-ngs-projects.vercel.app) &bull; [📖 Submission Video](#) &bull; [🛠️ GitHub Repository](https://github.com/Webghost01-NG/zecspectra)
+[🚀 **Live App: https://zecspectra.vercel.app**](https://zecspectra.vercel.app) &bull; [🛠️ GitHub: Webghost01-NG/zecspectra](https://github.com/Webghost01-NG/zecspectra)
 
 ---
 
@@ -19,7 +19,7 @@
 ## 🌟 Key Highlights & Why ZecSpectra Wins
 
 1. **Dual Network Support (Mainnet & Testnet Switcher)**  
-   Switch between Zcash Mainnet (~2.8M+ blocks) and Testnet in real-time with one click.
+   Switch between Zcash Mainnet and Testnet in real-time with one click.
 2. **Deep Shielded Pool Telemetry (Groth16 & Halo 2)**  
    Live breakdown of circulating ZEC distribution across **Transparent**, **Sprout (Legacy ZK)**, **Sapling (Groth16)**, and **Orchard (Recursive Halo 2 without trusted setup)**.
 3. **Confirmed Transaction & Block Streamer**  
@@ -52,7 +52,7 @@ ZecSpectra exceeds the challenge requirement (minimum 3 methods) with **6 verifi
 
 ```mermaid
 graph TD
-    A[Next.js 15 Client Frontend] -->|REST / Realtime Polling| B[Next.js Serverless API Proxy]
+    A[Next.js Client Frontend] -->|REST / Realtime Polling| B[Next.js Serverless API Proxy]
     B -->|JSON-RPC 2.0 POST| C[Zcash Zebra Node / Mainnet RPC Engine]
     C -->|P2P Mesh Gossip| D[Zcash Global Network]
     
@@ -73,7 +73,7 @@ graph TD
     A --> J
 ```
 
-- **Frontend:** Next.js 15 (App Router), React 19, TypeScript, Tailwind CSS v3 (Official Zcash Brand Palette `#F4B728`).
+- **Frontend:** Next.js (App Router), React, TypeScript, Tailwind CSS (Official Zcash Brand Palette `#F4B728`).
 - **Node Client:** Zebra Node (`zfnd/zebra:latest`) & JSON-RPC 2.0 HTTP Proxy with automatic serverless failover.
 - **Styling:** Custom Obsidian Dark glassmorphic design inspired by [z.cash](https://z.cash).
 
@@ -97,17 +97,7 @@ docker compose up -d
 ```bash
 npm run dev
 ```
-Open **`http://localhost:3000`** (or `http://localhost:3005`) in your browser.
-
----
-
-## 🌐 Production Deployment on Vercel
-
-ZecSpectra includes built-in dual-fallback resolution designed specifically for serverless hosting:
-
-```bash
-npx vercel --prod
-```
+Open **`http://localhost:3000`** in your browser.
 
 ---
 
@@ -118,6 +108,7 @@ npx vercel --prod
 - [x] **3+ RPC Methods:** 6 verified RPC methods implemented and benchmarked.
 - [x] **Live Data:** Real-time block heights, shielded pool balances, and live transaction stream.
 - [x] **Zero Mock Data:** 100% verified live network data.
+- [x] **Live Deployment:** Production live link on Vercel.
 
 ---
 
