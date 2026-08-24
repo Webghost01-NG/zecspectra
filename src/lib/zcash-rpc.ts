@@ -71,10 +71,13 @@ export async function callZcashRpc<T = any>(
     };
   } catch (err: any) {
     clearTimeout(timeoutId);
+    // Log detailed error server-side only
+    console.error(`[ZecSpectra RPC] ${method} failed on ${rpcUrl}:`, err.message);
+    // Return sanitized error — NEVER expose internal URLs
     throw new Error(
       err.name === 'AbortError'
-        ? `RPC timeout: ${rpcUrl} did not respond within 8s`
-        : `RPC error (${rpcUrl}): ${err.message}`
+        ? 'Zcash node did not respond within 8 seconds.'
+        : 'Zcash node is not reachable.'
     );
   }
 }

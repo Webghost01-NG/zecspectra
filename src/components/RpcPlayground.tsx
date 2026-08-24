@@ -274,7 +274,7 @@ export const RpcPlayground: React.FC<{ network?: 'mainnet' | 'testnet' }> = ({ n
               ) : (
                 <div className="flex flex-col items-center justify-center h-48 text-zinc-500">
                   <Terminal className="h-8 w-8 mb-2 opacity-40" />
-                  <p className="text-xs">Select a preset or click "Execute" to run an RPC query.</p>
+                  <p className="text-xs">Select a preset or click &quot;Execute&quot; to run an RPC query.</p>
                 </div>
               )}
             </div>

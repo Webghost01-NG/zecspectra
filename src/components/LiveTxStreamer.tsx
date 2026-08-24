@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Radio, Zap, Copy, Check, Shield, Activity, EyeOff, Layers, AlertCircle } from '@/components/Icons';
 
 interface ConfirmedTxItem {
@@ -25,7 +25,7 @@ export const LiveTxStreamer: React.FC<LiveTxStreamerProps> = ({ network = 'mainn
   const [dataSource, setDataSource] = useState<string>('');
   const [error, setError] = useState<string>('');
 
-  const fetchConfirmedStream = async () => {
+  const fetchConfirmedStream = useCallback(async () => {
     try {
       const res = await fetch(`/api/tx-stream?network=${network}`);
       if (res.ok) {
@@ -45,14 +45,14 @@ export const LiveTxStreamer: React.FC<LiveTxStreamerProps> = ({ network = 'mainn
     } catch (e) {
       setError('Failed to reach transaction stream endpoint.');
     }
-  };
+  }, [network]);
 
   useEffect(() => {
     fetchConfirmedStream();
     if (!isListening) return;
     const interval = setInterval(fetchConfirmedStream, 15000);
     return () => clearInterval(interval);
-  }, [isListening, network]);
+  }, [isListening, fetchConfirmedStream]);
 
   const copyTx = (txid: string) => {
     navigator.clipboard.writeText(txid);

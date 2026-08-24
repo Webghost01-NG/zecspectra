@@ -9,11 +9,34 @@ interface ConsensusUpgradesProps {
   currentHeight: number;
 }
 
+const DEFAULT_UPGRADES: Record<string, NetworkUpgrade> = {
+  '5ba81b19': { name: 'Overwinter', activationheight: 347500, status: 'active' },
+  '76b809bb': { name: 'Sapling', activationheight: 419200, status: 'active' },
+  '2bb40e60': { name: 'Blossom', activationheight: 653600, status: 'active' },
+  'f5b9230b': { name: 'Heartwood', activationheight: 903000, status: 'active' },
+  'e9ff75a6': { name: 'Canopy', activationheight: 1046400, status: 'active' },
+  'c2d6d0b4': { name: 'NU5', activationheight: 1687104, status: 'active' },
+  'c8e71055': { name: 'NU6', activationheight: 2726400, status: 'active' },
+  '4e4a055d': { name: 'NU6.3', activationheight: 3428143, status: 'active' },
+  'ironwood': { name: 'Ironwood', activationheight: 0, status: 'pending' },
+};
+
 export const ConsensusUpgrades: React.FC<ConsensusUpgradesProps> = ({ upgrades = {}, currentHeight }) => {
   const safeUpgrades = upgrades && typeof upgrades === 'object' ? upgrades : {};
+  const sourceUpgrades = Object.keys(safeUpgrades).length > 0 ? safeUpgrades : DEFAULT_UPGRADES;
 
-  const upgradeList = Object.entries(safeUpgrades).map(([id, info]) => {
-    const isActivated = currentHeight >= info.activationheight;
+  // Ensure NU6.3 and Ironwood are included if missing from node data
+  const displayUpgrades: Record<string, NetworkUpgrade> = { ...sourceUpgrades };
+  if (!Object.values(displayUpgrades).some((u) => u.name?.toLowerCase().includes('nu6.3'))) {
+    displayUpgrades['4e4a055d'] = { name: 'NU6.3', activationheight: 3428143, status: currentHeight >= 3428143 ? 'active' : 'pending' };
+  }
+  if (!Object.values(displayUpgrades).some((u) => u.name?.toLowerCase().includes('ironwood'))) {
+    displayUpgrades['ironwood'] = { name: 'Ironwood', activationheight: 0, status: 'pending' };
+  }
+
+  const upgradeList = Object.entries(displayUpgrades).map(([id, info]) => {
+    const isPending = info.status === 'pending' || info.activationheight === 0 || (info.activationheight > 0 && currentHeight < info.activationheight);
+    const isActivated = !isPending && (info.status === 'active' || (info.activationheight > 0 && currentHeight >= info.activationheight));
     return {
       id,
       name: info.name,
@@ -35,7 +58,7 @@ export const ConsensusUpgrades: React.FC<ConsensusUpgradesProps> = ({ upgrades =
             </span>
           </div>
           <p className="text-xs text-zinc-400 mt-1">
-            Tracking activation milestones across Zcash Network Upgrades (Overwinter, Sapling, Blossom, Heartwood, Canopy, NU5, NU6, NU6.1).
+            Tracking activation milestones across Zcash Network Upgrades (Overwinter, Sapling, Blossom, Heartwood, Canopy, NU5, NU6, NU6.3, Ironwood).
           </p>
         </div>
       </div>
@@ -60,7 +83,9 @@ export const ConsensusUpgrades: React.FC<ConsensusUpgradesProps> = ({ upgrades =
                 )}
               </div>
               <p className="text-[11px] font-mono text-zinc-400 mt-2">
-                Block #{upgrade.activationHeight.toLocaleString()}
+                {upgrade.activationHeight > 0
+                  ? `Block #${upgrade.activationHeight.toLocaleString()}`
+                  : 'Pending (Height TBD)'}
               </p>
             </div>
 
@@ -82,3 +107,4 @@ export const ConsensusUpgrades: React.FC<ConsensusUpgradesProps> = ({ upgrades =
     </div>
   );
 };
+

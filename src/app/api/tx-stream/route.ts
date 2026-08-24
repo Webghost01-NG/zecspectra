@@ -3,18 +3,18 @@ import { callZcashRpc } from '@/lib/zcash-rpc';
 
 export const dynamic = 'force-dynamic';
 
-// Cache to avoid hammering Blockchair
-let txCache: any = null;
-let txCacheAt = 0;
+// Per-network cache to prevent testnet returning mainnet data
+const txCache: Record<string, { data: any; at: number }> = {};
 const TX_CACHE_TTL = 15_000;
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const network = (searchParams.get('network') === 'testnet' ? 'testnet' : 'mainnet') as 'mainnet' | 'testnet';
 
-  // Return cached if fresh
-  if (txCache && (Date.now() - txCacheAt) < TX_CACHE_TTL) {
-    return NextResponse.json(txCache);
+  // Return cached per-network
+  const cached = txCache[network];
+  if (cached && (Date.now() - cached.at) < TX_CACHE_TTL) {
+    return NextResponse.json(cached.data);
   }
 
   // === 1. Try direct node RPC ===
@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
       const block = blockRes.result;
       if (block && Array.isArray(block.tx)) {
         const result = {
-          source: 'node',
+          source: 'node', network,
           transactions: block.tx.map((txid: string, idx: number) => ({
             txid, height: blockHeight, blockHash: bestHash,
             time: new Date(block.time * 1000).toISOString(),
@@ -35,16 +35,16 @@ export async function GET(req: NextRequest) {
           })),
           blockHeight, bestHash,
           blockTime: new Date(block.time * 1000).toISOString(),
-          txCount: block.tx.length, network,
+          txCount: block.tx.length,
           updatedAt: new Date().toISOString(),
         };
-        txCache = result; txCacheAt = Date.now();
+        txCache[network] = { data: result, at: Date.now() };
         return NextResponse.json(result);
       }
     }
   } catch (err) {}
 
-  // === 2. Blockchair: use context.state (last indexed block) ===
+  // === 2. Blockchair (mainnet only) ===
   if (network === 'mainnet') {
     try {
       const statsRes = await fetch('https://api.blockchair.com/zcash/stats', {
@@ -53,10 +53,8 @@ export async function GET(req: NextRequest) {
       });
       if (statsRes.ok) {
         const statsData = await statsRes.json();
-        // Use context.state which is the last fully indexed block
         const indexedHeight = statsData.context?.state || (statsData.data?.blocks ? statsData.data.blocks - 1 : 0);
         const latestHash = statsData.data?.best_block_hash || '';
-
         if (indexedHeight > 0) {
           const blockRes = await fetch(
             `https://api.blockchair.com/zcash/dashboards/block/${indexedHeight}`,
@@ -64,14 +62,11 @@ export async function GET(req: NextRequest) {
           );
           if (blockRes.ok) {
             const blockData = await blockRes.json();
-            // Blockchair returns data as object keyed by block height string
             const bd = blockData.data && typeof blockData.data === 'object' && !Array.isArray(blockData.data)
-              ? blockData.data[String(indexedHeight)]
-              : null;
-
+              ? blockData.data[String(indexedHeight)] : null;
             if (bd && Array.isArray(bd.transactions) && bd.transactions.length > 0) {
               const result = {
-                source: 'indexer',
+                source: 'indexer', network,
                 transactions: bd.transactions.map((txid: string, idx: number) => ({
                   txid, height: indexedHeight, blockHash: latestHash,
                   time: bd.block?.time || new Date().toISOString(),
@@ -80,10 +75,10 @@ export async function GET(req: NextRequest) {
                 })),
                 blockHeight: indexedHeight, bestHash: latestHash,
                 blockTime: bd.block?.time || new Date().toISOString(),
-                txCount: bd.transactions.length, network,
+                txCount: bd.transactions.length,
                 updatedAt: new Date().toISOString(),
               };
-              txCache = result; txCacheAt = Date.now();
+              txCache[network] = { data: result, at: Date.now() };
               return NextResponse.json(result);
             }
           }
@@ -93,9 +88,12 @@ export async function GET(req: NextRequest) {
   }
 
   // === 3. Nothing available ===
-  return NextResponse.json({
-    source: 'none', transactions: [], blockHeight: 0, bestHash: '',
-    blockTime: '', txCount: 0, network, updatedAt: new Date().toISOString(),
-    error: 'No data source available for transaction stream.',
-  });
+  const emptyResult = {
+    source: 'none', network, transactions: [], blockHeight: 0, bestHash: '',
+    blockTime: '', txCount: 0, updatedAt: new Date().toISOString(),
+    error: network === 'testnet'
+      ? 'No testnet node connected. Configure ZCASH_TESTNET_RPC to see testnet transactions.'
+      : 'No data source available for transaction stream.',
+  };
+  return NextResponse.json(emptyResult);
 }

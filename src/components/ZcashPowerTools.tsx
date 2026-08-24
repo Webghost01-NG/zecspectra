@@ -1,23 +1,55 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Shield, Zap, Search, Activity, Cpu, Layers, Sparkles, Terminal } from '@/components/Icons';
 
 export const ZcashPowerTools: React.FC = () => {
-  // Address Inspector State
-  const [addressInput, setAddressInput] = useState<string>('u1q67z53q0q9z40a33vshwdfd27t6s4s8g39j4n7s6y5m2j9w8s7f6a5z4x3c2v1b0n9m8');
+  // Address Classifier State
+  const [addressInput, setAddressInput] = useState<string>('u1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq');
   
   // Fee & Converter State
   const [zecAmount, setZecAmount] = useState<string>('1.5');
   const [zatsAmount, setZatsAmount] = useState<string>('150000000');
-  const [usdRate] = useState<number>(38.25);
+  const [usdRate, setUsdRate] = useState<number | null>(null);
+  const [priceLastUpdated, setPriceLastUpdated] = useState<string | null>(null);
+  const [priceError, setPriceError] = useState<boolean>(false);
   const [txActions, setTxActions] = useState<number>(2);
 
   // Privacy Grader State
   const [inputType, setInputType] = useState<'orchard' | 'sapling' | 'transparent'>('orchard');
   const [outputType, setOutputType] = useState<'orchard' | 'sapling' | 'transparent'>('orchard');
 
-  // Address classification logic
+  // Fetch real-time USD price from CoinGecko
+  useEffect(() => {
+    let isMounted = true;
+    const fetchPrice = async () => {
+      try {
+        const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=zcash&vs_currencies=usd');
+        if (!res.ok) throw new Error('Price fetch failed');
+        const data = await res.json();
+        if (data?.zcash?.usd && isMounted) {
+          setUsdRate(data.zcash.usd);
+          setPriceLastUpdated(new Date().toLocaleTimeString());
+          setPriceError(false);
+        } else if (isMounted) {
+          setPriceError(true);
+        }
+      } catch {
+        if (isMounted) {
+          setPriceError(true);
+        }
+      }
+    };
+
+    fetchPrice();
+    const interval = setInterval(fetchPrice, 60000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, []);
+
+  // Address classification logic (by prefix only)
   const parseAddress = (addr: string) => {
     const trimmed = addr.trim();
     if (!trimmed) return null;
@@ -25,14 +57,14 @@ export const ZcashPowerTools: React.FC = () => {
     if (trimmed.startsWith('u1')) {
       return {
         type: 'Unified Address (ZIP-316)',
-        privacyLevel: 'Maximum Privacy (Multi-Receiver)',
+        privacyLevel: 'Multi-Receiver Container',
         badgeColor: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400',
         receivers: [
-          { name: 'Orchard Receiver', status: 'Active (Halo 2 Proving)', shielded: true },
-          { name: 'Sapling Receiver', status: 'Active (Groth16 Proving)', shielded: true },
-          { name: 'Transparent Receiver', status: 'Optional Fallback', shielded: false },
+          { name: 'Orchard Receiver', status: 'Potential Receiver (Halo 2)', shielded: true },
+          { name: 'Sapling Receiver', status: 'Potential Receiver (Groth16)', shielded: true },
+          { name: 'Transparent Receiver', status: 'Potential Fallback', shielded: false },
         ],
-        description: 'Next-generation universal Zcash address supporting Orchard, Sapling, and Transparent pools in a single string.',
+        description: 'May contain Orchard, Sapling, and/or Transparent receivers (decode with a wallet to verify)',
       };
     }
 
@@ -66,9 +98,9 @@ export const ZcashPowerTools: React.FC = () => {
         privacyLevel: 'Sprout ZK Pool (PHGR13)',
         badgeColor: 'border-purple-500/30 bg-purple-500/10 text-purple-400',
         receivers: [
-          { name: 'Sprout Receiver', status: 'Deprecated / Legacy', shielded: true },
+          { name: 'Sprout Receiver', status: 'PHGR13 Proving (Legacy)', shielded: true },
         ],
-        description: 'Original Zcash Sprout shielded address from 2016 launch. Replaced by Sapling and Orchard.',
+        description: 'Original Zcash Sprout shielded address from 2016 launch using PHGR13 zero-knowledge proofs (NOT Groth16). Replaced by Sapling and Orchard.',
       };
     }
 
@@ -129,26 +161,26 @@ export const ZcashPowerTools: React.FC = () => {
   return (
     <div className="space-y-8">
       
-      {/* 1. Unified Address (UA) Inspector */}
+      {/* 1. Address Prefix Classifier */}
       <div className="rounded-2xl border border-zcash-border bg-zcash-card p-6 shadow-xl backdrop-blur-md space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-zcash-border pb-4">
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <h3 className="text-base font-bold text-white tracking-tight">
-                Unified Address (UA) Inspector
+                Address Prefix Classifier
               </h3>
-              <span className="rounded-md bg-zcash-gold/10 px-2 py-0.5 text-[10px] font-bold text-zcash-gold border border-zcash-gold/30">
-                ZIP-316 Address Classification
+              <span className="rounded-md bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-400 border border-amber-500/30">
+                (Unvalidated — classification by prefix only)
               </span>
             </div>
             <p className="text-xs text-zinc-400 mt-1">
-              Classify any Zcash address by prefix to identify receiver types (Orchard, Sapling, Transparent).
+              Classify any Zcash address by prefix to identify potential receiver types.
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
-              onClick={() => setAddressInput('u1q67z53q0q9z40a33vshwdfd27t6s4s8g39j4n7s6y5m2j9w8s7f6a5z4x3c2v1b0n9m8')}
+              onClick={() => setAddressInput('u1qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq')}
               className="text-[11px] px-2.5 py-1 rounded-lg border border-zcash-border bg-zcash-navy text-zinc-300 hover:text-white hover:border-zcash-gold/40 transition-all"
             >
               Load Sample UA (u1)
@@ -160,7 +192,7 @@ export const ZcashPowerTools: React.FC = () => {
               Load Sapling (zs1)
             </button>
             <button
-              onClick={() => setAddressInput('t1g65wzdfa394kdfj3098eue49fjd3849182390fade')}
+              onClick={() => setAddressInput('t1Rv4exT7bqhZqi2j7xz8bUHDMxwosrjADU')}
               className="text-[11px] px-2.5 py-1 rounded-lg border border-zcash-border bg-zcash-navy text-zinc-300 hover:text-white hover:border-zcash-gold/40 transition-all"
             >
               Load Transparent (t1)
@@ -199,7 +231,7 @@ export const ZcashPowerTools: React.FC = () => {
               {addressInfo.receivers.length > 0 && (
                 <div>
                   <h4 className="text-[11px] font-bold uppercase tracking-wider text-zinc-400 mb-2">
-                    Decoded Receiver Components:
+                    Receiver Pool Profiles:
                   </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                     {addressInfo.receivers.map((rec, idx) => (
@@ -225,12 +257,12 @@ export const ZcashPowerTools: React.FC = () => {
         {/* Privacy Grader */}
         <div className="rounded-2xl border border-zcash-border bg-zcash-card p-6 shadow-xl backdrop-blur-md space-y-6">
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <h3 className="text-base font-bold text-white tracking-tight">
                 Transaction Privacy Scorer
               </h3>
-              <span className="rounded-md bg-emerald-500/10 px-2 py-0.5 text-[10px] font-bold text-emerald-400 border border-emerald-500/30">
-                ZK Shielding Analysis
+              <span className="rounded-md bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold text-amber-400 border border-amber-500/30">
+                Illustrative Heuristic — Not Authoritative
               </span>
             </div>
             <p className="text-xs text-zinc-400 mt-1">
@@ -285,6 +317,10 @@ export const ZcashPowerTools: React.FC = () => {
             <p className="text-[11px] text-zinc-300 font-medium pt-1">
               &bull; {privacyResult.label}
             </p>
+
+            <p className="text-[10px] text-zinc-500 italic border-t border-zinc-800/80 pt-2">
+              Disclaimer: This score is an illustrative educational heuristic and not an authoritative cryptographic privacy guarantee. Real-world privacy depends on transaction graph topology, amounts, timing, and network-level metadata.
+            </p>
           </div>
         </div>
 
@@ -328,9 +364,20 @@ export const ZcashPowerTools: React.FC = () => {
 
           <div className="rounded-xl border border-zcash-border bg-zcash-navy p-4 space-y-3">
             <div className="flex items-center justify-between text-xs">
-              <span className="text-zinc-400">Fiat Value (~$38.25/ZEC):</span>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-zinc-400">Fiat Value:</span>
+                {usdRate !== null && !priceError ? (
+                  <span className="text-[10px] text-zinc-500 font-mono">
+                    (${usdRate.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/ZEC{priceLastUpdated ? ` • Last updated: ${priceLastUpdated}` : ''})
+                  </span>
+                ) : (
+                  <span className="text-[10px] text-amber-500/80 font-mono">(Price unavailable)</span>
+                )}
+              </div>
               <span className="font-bold text-white font-mono">
-                ${(parseFloat(zecAmount || '0') * usdRate).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
+                {usdRate !== null && !priceError
+                  ? `$${(parseFloat(zecAmount || '0') * usdRate).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD`
+                  : 'Price unavailable'}
               </span>
             </div>
 
@@ -371,37 +418,43 @@ export const ZcashPowerTools: React.FC = () => {
               Zcash Protocol Economics & Halving Tracker
             </h3>
             <p className="text-xs text-zinc-400 mt-1">
-              Block reward subsidy distribution and upcoming halving milestones.
+              Block reward subsidy distribution per ZIP-218 and ZIP-214 and upcoming halving milestones.
             </p>
           </div>
           <span className="rounded-full bg-blue-500/10 px-3 py-1 text-[11px] font-bold text-blue-400 border border-blue-500/30">
-            Block Subsidy: 3.125 ZEC
+            Block Subsidy: 1.5625 ZEC
           </span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3.5">
           <div className="p-3.5 rounded-xl bg-zcash-navy border border-zcash-border">
-            <span className="text-[11px] text-zinc-400 block mb-1">Block Reward</span>
-            <span className="text-lg font-bold font-mono text-white">3.125 ZEC</span>
+            <span className="text-[11px] text-zinc-400 block mb-1">Block Subsidy</span>
+            <span className="text-lg font-bold font-mono text-white">1.5625 ZEC</span>
             <span className="text-[10px] text-zinc-400 block mt-1">Issued every 75s (~1.25m)</span>
           </div>
 
           <div className="p-3.5 rounded-xl bg-zcash-navy border border-zcash-border">
             <span className="text-[11px] text-zinc-400 block mb-1">Miner Allocation (80%)</span>
-            <span className="text-lg font-bold font-mono text-emerald-400">2.50 ZEC</span>
+            <span className="text-lg font-bold font-mono text-emerald-400">1.25 ZEC</span>
             <span className="text-[10px] text-zinc-400 block mt-1">PoW Equihash Miners</span>
           </div>
 
           <div className="p-3.5 rounded-xl bg-zcash-navy border border-zcash-border">
-            <span className="text-[11px] text-zinc-400 block mb-1">Lockbox / Dev Fund (20%)</span>
-            <span className="text-lg font-bold font-mono text-zcash-gold">0.625 ZEC</span>
-            <span className="text-[10px] text-zinc-400 block mt-1">NU6 Transition Reserve</span>
+            <span className="text-[11px] text-zinc-400 block mb-1">8% Lockbox Stream</span>
+            <span className="text-lg font-bold font-mono text-zcash-gold">0.125 ZEC</span>
+            <span className="text-[10px] text-zinc-400 block mt-1">ZIP-218 Deferred Fund</span>
+          </div>
+
+          <div className="p-3.5 rounded-xl bg-zcash-navy border border-zcash-border">
+            <span className="text-[11px] text-zinc-400 block mb-1">12% Dev Fund Stream</span>
+            <span className="text-lg font-bold font-mono text-blue-400">0.1875 ZEC</span>
+            <span className="text-[10px] text-zinc-400 block mt-1">ZIP-214 Direct Dev Fund</span>
           </div>
 
           <div className="p-3.5 rounded-xl bg-zcash-navy border border-zcash-border">
             <span className="text-[11px] text-zinc-400 block mb-1">Next Halving Height</span>
-            <span className="text-lg font-bold font-mono text-purple-400">3,760,000</span>
-            <span className="text-[10px] text-zinc-400 block mt-1">Reward will drop to 1.5625 ZEC</span>
+            <span className="text-lg font-bold font-mono text-purple-400">4,406,400</span>
+            <span className="text-[10px] text-zinc-400 block mt-1">Reward will drop to 0.78125 ZEC</span>
           </div>
         </div>
       </div>

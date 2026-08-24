@@ -1,3 +1,6 @@
+[consensus]
+checkpoint_sync = true
+
 [network]
 network = "Mainnet"
 listen_addr = "0.0.0.0:8233"
@@ -8,11 +11,6 @@ enable_cookie_auth = false
 
 [state]
 cache_dir = "/home/zebra/.cache/zebra"
-
-[sync]
-checkpoint_verify_concurrency_limit = 1000
-download_concurrency_limit = 50
-full_verify_concurrency_limit = 20
 
 [tracing]
 filter = "info"
