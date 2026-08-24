@@ -7,9 +7,10 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const network = (searchParams.get('network') === 'testnet' ? 'testnet' : 'mainnet') as 'mainnet' | 'testnet';
 
+  // === 1. Try direct node RPC: getblockchaininfo -> getblock ===
   try {
     const infoRes = await callZcashRpc('getblockchaininfo', [], network);
-    if (!infoRes.error && infoRes.result && infoRes.result.blocks > 0) {
+    if (infoRes.result && infoRes.result.blocks > 0) {
       const bestHash = infoRes.result.bestblockhash;
       const blockHeight = infoRes.result.blocks;
 
@@ -24,10 +25,10 @@ export async function GET(req: NextRequest) {
           time: new Date(block.time * 1000).toLocaleTimeString(),
           blockTimestamp: block.time,
           isCoinbase: idx === 0,
-          type: idx === 0 ? 'coinbase' : (txid.charCodeAt(0) % 2 === 0 ? 'shielded' : 'transparent'),
         }));
 
         return NextResponse.json({
+          source: 'node',
           transactions,
           blockHeight,
           bestHash,
@@ -38,35 +39,77 @@ export async function GET(req: NextRequest) {
         });
       }
     }
-  } catch (err) {}
+  } catch (err) {
+    // Node unreachable, try indexer
+  }
 
-  // Fallback confirmed block transactions stream for public visitors
-  const currentHeight = network === 'mainnet' ? 2824150 : 3520140;
-  const mockTxIds = [
-    "e9d3434b9d0b64d39f75ec3e7cf7bfa2b3a886f3b063853176ef933a0429f451",
-    "4a23b9d01e64d39f75ec3e7cf7bfa2b3a886f3b063853176ef933a0429f4523c",
-    "c87fae019b88f3a0293b4e78921cf8a38411b9841804ec67849e7bda309e41b2",
-    "1289cf8b001a74d23e89fbca38491bbca38914028ecda849182390fadecb1984",
-    "77a0bc4291fa8e93ba4e7230198acdf8491b29402948ecda891240fabb201948",
-  ];
+  // === 2. Fallback: Blockchair latest block transactions ===
+  if (network === 'mainnet') {
+    try {
+      const statsRes = await fetch('https://api.blockchair.com/zcash/stats', {
+        headers: { 'User-Agent': 'ZecSpectra/1.0' },
+        signal: AbortSignal.timeout(6000),
+      });
 
-  const transactions = mockTxIds.map((txid, idx) => ({
-    txid,
-    height: currentHeight,
-    blockHash: "000000000085a1a9e3d93bfb123689cb9f6a7d5c23e8091a27e7f61c39050d41",
-    time: new Date().toLocaleTimeString(),
-    blockTimestamp: Math.floor(Date.now() / 1000),
-    isCoinbase: idx === 0,
-    type: idx === 0 ? 'coinbase' : (idx % 2 === 0 ? 'shielded' : 'transparent'),
-  }));
+      if (statsRes.ok) {
+        const statsData = await statsRes.json();
+        const latestHeight = statsData.data?.blocks;
+        const latestHash = statsData.data?.best_block_hash;
 
+        if (latestHeight) {
+          // Get the latest block's transactions from Blockchair
+          const blockRes = await fetch(
+            `https://api.blockchair.com/zcash/dashboards/block/${latestHeight}`,
+            {
+              headers: { 'User-Agent': 'ZecSpectra/1.0' },
+              signal: AbortSignal.timeout(6000),
+            }
+          );
+
+          if (blockRes.ok) {
+            const blockData = await blockRes.json();
+            const blockKey = Object.keys(blockData.data || {})[0];
+            const bd = blockData.data?.[blockKey];
+
+            if (bd && Array.isArray(bd.transactions)) {
+              const transactions = bd.transactions.map((txid: string, idx: number) => ({
+                txid,
+                height: latestHeight,
+                blockHash: latestHash || '',
+                time: bd.block?.time || new Date().toISOString(),
+                blockTimestamp: Math.floor(new Date(bd.block?.time || Date.now()).getTime() / 1000),
+                isCoinbase: idx === 0,
+              }));
+
+              return NextResponse.json({
+                source: 'indexer',
+                transactions,
+                blockHeight: latestHeight,
+                bestHash: latestHash || '',
+                blockTime: bd.block?.time || new Date().toISOString(),
+                txCount: bd.transactions.length,
+                network,
+                updatedAt: new Date().toISOString(),
+              });
+            }
+          }
+        }
+      }
+    } catch (err) {
+      // Indexer also failed
+    }
+  }
+
+  // === 3. No data — return empty, honest response ===
   return NextResponse.json({
-    transactions,
-    blockHeight: currentHeight,
-    bestHash: "000000000085a1a9e3d93bfb123689cb9f6a7d5c23e8091a27e7f61c39050d41",
-    blockTime: new Date().toLocaleString(),
-    txCount: transactions.length,
+    source: 'none',
+    transactions: [],
+    blockHeight: 0,
+    bestHash: '',
+    blockTime: '',
+    txCount: 0,
     network,
     updatedAt: new Date().toISOString(),
+    error: 'No Zcash node or indexer available. Connect a node to see live transactions.',
   });
 }

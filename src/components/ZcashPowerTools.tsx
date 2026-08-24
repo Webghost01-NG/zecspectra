@@ -135,14 +135,14 @@ export const ZcashPowerTools: React.FC = () => {
           <div>
             <div className="flex items-center gap-2">
               <h3 className="text-base font-bold text-white tracking-tight">
-                Unified Address (UA) Inspector & Decoder
+                Unified Address (UA) Inspector
               </h3>
               <span className="rounded-md bg-zcash-gold/10 px-2 py-0.5 text-[10px] font-bold text-zcash-gold border border-zcash-gold/30">
-                ZIP-316 Compliant
+                ZIP-316 Address Classification
               </span>
             </div>
             <p className="text-xs text-zinc-400 mt-1">
-              Inspect any Zcash address to decode receivers (Orchard, Sapling, Transparent) and verify checksum formatting.
+              Classify any Zcash address by prefix to identify receiver types (Orchard, Sapling, Transparent).
             </p>
           </div>
 

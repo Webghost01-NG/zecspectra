@@ -6,9 +6,10 @@ import { BlockHeader } from '@/types/zcash';
 
 interface BlockExplorerLiteProps {
   currentHeight: number;
+  network?: 'mainnet' | 'testnet';
 }
 
-export const BlockExplorerLite: React.FC<BlockExplorerLiteProps> = ({ currentHeight }) => {
+export const BlockExplorerLite: React.FC<BlockExplorerLiteProps> = ({ currentHeight, network = 'mainnet' }) => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [blockData, setBlockData] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -19,7 +20,7 @@ export const BlockExplorerLite: React.FC<BlockExplorerLiteProps> = ({ currentHei
     setIsLoading(true);
     setError(null);
     try {
-      const res = await fetch(`/api/block?query=${encodeURIComponent(query.trim())}`);
+      const res = await fetch(`/api/block?query=${encodeURIComponent(query.trim())}&network=${network}`);
       const data = await res.json();
 
       if (!res.ok || data.error) {

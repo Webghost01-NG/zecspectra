@@ -22,13 +22,17 @@ export async function POST(req: NextRequest) {
     const result = await callZcashRpc(method, params, network);
     return NextResponse.json(result);
   } catch (err: any) {
+    // Real error — node unreachable or method failed
     return NextResponse.json(
       {
         jsonrpc: '2.0',
         id: 'error',
-        error: { code: -32603, message: err.message || 'Internal Server Error' },
+        error: {
+          code: -32603,
+          message: err.message || 'Failed to connect to Zcash node. Ensure a node is running and accessible.',
+        },
       },
-      { status: 500 }
+      { status: 502 }
     );
   }
 }

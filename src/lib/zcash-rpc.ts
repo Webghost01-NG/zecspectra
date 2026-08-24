@@ -1,42 +1,37 @@
 import { RpcResponse } from '@/types/zcash';
 
+export const ZCASH_MAINNET_RPC = process.env.ZCASH_MAINNET_RPC || 'http://127.0.0.1:8232';
 export const ZCASH_TESTNET_RPC = process.env.ZCASH_TESTNET_RPC || 'http://127.0.0.1:18232';
-export const ZCASH_MAINNET_RPC = process.env.ZCASH_MAINNET_RPC || 'https://zcash.drpc.org';
 
-export const ZCASH_DEFAULT_RPC = ZCASH_MAINNET_RPC;
-
+/**
+ * Send a JSON-RPC 2.0 call to a Zcash node (Zebra or zcashd).
+ * Returns the raw RPC response. If the call fails, throws an error.
+ * NO mock data. NO synthetic fallbacks. If the node is unreachable, the caller handles the error.
+ */
 export async function callZcashRpc<T = any>(
   method: string,
   params: any[] = [],
-  networkOrUrl: string = 'mainnet'
+  network: 'mainnet' | 'testnet' = 'mainnet'
 ): Promise<RpcResponse<T>> {
   const startTime = Date.now();
-  
-  let primaryUrl = ZCASH_MAINNET_RPC;
-  if (networkOrUrl === 'testnet') {
-    primaryUrl = ZCASH_TESTNET_RPC;
-  } else if (networkOrUrl === 'mainnet') {
-    primaryUrl = ZCASH_MAINNET_RPC;
-  } else if (networkOrUrl.startsWith('http')) {
-    primaryUrl = networkOrUrl;
+  const rpcUrl = network === 'testnet' ? ZCASH_TESTNET_RPC : ZCASH_MAINNET_RPC;
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+
+  if (process.env.ZCASH_RPC_USER && process.env.ZCASH_RPC_PASSWORD) {
+    const auth = Buffer.from(
+      `${process.env.ZCASH_RPC_USER}:${process.env.ZCASH_RPC_PASSWORD}`
+    ).toString('base64');
+    headers['Authorization'] = `Basic ${auth}`;
   }
 
-  const tryRpcCall = async (targetUrl: string) => {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 6000);
-
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-    };
-
-    if (process.env.ZCASH_RPC_USER && process.env.ZCASH_RPC_PASSWORD) {
-      const auth = Buffer.from(
-        `${process.env.ZCASH_RPC_USER}:${process.env.ZCASH_RPC_PASSWORD}`
-      ).toString('base64');
-      headers['Authorization'] = `Basic ${auth}`;
-    }
-
-    const res = await fetch(targetUrl, {
+  try {
+    const res = await fetch(rpcUrl, {
       method: 'POST',
       headers,
       body: JSON.stringify({
@@ -49,78 +44,22 @@ export async function callZcashRpc<T = any>(
     });
 
     clearTimeout(timeoutId);
+
     if (!res.ok) {
-      throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-    }
-    return await res.json();
-  };
-
-  try {
-    const data = await tryRpcCall(primaryUrl);
-    if (data.result !== undefined || data.error) {
-      return {
-        ...data,
-        durationMs: Date.now() - startTime,
-      };
-    }
-  } catch (err: any) {}
-
-  // Fallback for RPC Playground and Block Dissector
-  const durationMs = Date.now() - startTime;
-
-  if (method === 'getblock' || method === 'getblockhash') {
-    const blockQuery = params[0] !== undefined ? params[0] : 2824150;
-    const height = typeof blockQuery === 'number' ? blockQuery : (parseInt(String(blockQuery), 10) || 2824150);
-    const mockHash = typeof blockQuery === 'string' && blockQuery.length === 64 
-      ? blockQuery 
-      : `000000000085a1a9e3d93bfb123689cb9f6a7d5c23e8091a27e7f61c39050d41`;
-
-    if (method === 'getblockhash') {
-      return {
-        jsonrpc: '2.0',
-        id: `zecspectra-${Date.now()}`,
-        result: mockHash as any,
-        durationMs,
-      };
+      throw new Error(`RPC HTTP ${res.status}: ${res.statusText}`);
     }
 
-    // getblock verbose
+    const data = await res.json();
     return {
-      jsonrpc: '2.0',
-      id: `zecspectra-${Date.now()}`,
-      result: {
-        hash: mockHash,
-        confirmations: 124,
-        size: 2450,
-        height: height,
-        version: 5,
-        merkleroot: '4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b',
-        tx: [
-          'e9d3434b9d0b64d39f75ec3e7cf7bfa2b3a886f3b063853176ef933a0429f451',
-          '4a23b9d01e64d39f75ec3e7cf7bfa2b3a886f3b063853176ef933a0429f4523c',
-          'c87fae019b88f3a0293b4e78921cf8a38411b9841804ec67849e7bda309e41b2',
-        ],
-        time: Math.floor(Date.now() / 1000) - 120,
-        nonce: '000000000000000000000000000000000000000000000000000000000000003f',
-        bits: '1f07ffff',
-        difficulty: 58450123.45,
-        chainwork: '00000000000000000000000000000000000000000000003f569b30c451829e21',
-        previousblockhash: `000000000078bc12a9e3d93bfb123689cb9f6a7d5c23e8091a27e7f61c39050d40`,
-        nextblockhash: `000000000094da34a9e3d93bfb123689cb9f6a7d5c23e8091a27e7f61c39050d42`,
-      } as any,
-      durationMs,
+      ...data,
+      durationMs: Date.now() - startTime,
     };
+  } catch (err: any) {
+    clearTimeout(timeoutId);
+    throw new Error(
+      err.name === 'AbortError'
+        ? `RPC timeout: ${rpcUrl} did not respond within 8s`
+        : `RPC error (${rpcUrl}): ${err.message}`
+    );
   }
-
-  return {
-    jsonrpc: '2.0',
-    id: `zecspectra-res`,
-    result: {
-      status: 'success',
-      method,
-      executedOn: 'Zcash Mainnet RPC Fallback Engine',
-      timestamp: new Date().toISOString(),
-    } as any,
-    durationMs,
-  };
 }

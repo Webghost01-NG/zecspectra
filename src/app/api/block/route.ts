@@ -6,7 +6,6 @@ export const dynamic = 'force-dynamic';
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const query = searchParams.get('query');
-  const customRpcUrl = searchParams.get('rpcUrl');
   const network = (searchParams.get('network') === 'testnet' ? 'testnet' : 'mainnet') as 'mainnet' | 'testnet';
 
   if (!query) {
@@ -15,74 +14,79 @@ export async function GET(req: NextRequest) {
 
   const trimmedQuery = query.trim();
 
-  // 1. If custom node RPC is specified, attempt direct node query first
-  if (customRpcUrl) {
-    try {
-      let blockHash = trimmedQuery;
-      if (/^\d+$/.test(trimmedQuery)) {
-        const hashRes = await callZcashRpc<string>('getblockhash', [parseInt(trimmedQuery, 10)], customRpcUrl);
-        if (hashRes.result) blockHash = hashRes.result;
-      }
-      const blockRes = await callZcashRpc('getblock', [blockHash, 1], customRpcUrl);
-      if (blockRes.result && blockRes.result.hash) {
-        return NextResponse.json({ block: blockRes.result, durationMs: blockRes.durationMs });
-      }
-    } catch (err) {}
-  }
-
-  // 2. Query real live on-chain Zcash blockchain indexer (Blockchair)
-  try {
-    const res = await fetch(`https://api.blockchair.com/zcash/dashboards/block/${encodeURIComponent(trimmedQuery)}`, {
-      headers: { 'User-Agent': 'ZecSpectra/1.0' },
-      next: { revalidate: 10 },
-    });
-
-    if (res.ok) {
-      const data = await res.json();
-      const blockKey = Object.keys(data.data || {})[0];
-      const blockData = data.data?.[blockKey];
-
-      if (blockData && blockData.block) {
-        const b = blockData.block;
-        const txs: string[] = Array.isArray(blockData.transactions) ? blockData.transactions : [];
-
-        const formattedBlock = {
-          hash: b.hash,
-          height: b.id,
-          size: b.size,
-          version: b.version,
-          merkleroot: b.merkleroot || b.hash,
-          tx: txs,
-          time: Math.floor(new Date(b.time).getTime() / 1000),
-          nonce: String(b.nonce || 0),
-          bits: b.bits || '1f07ffff',
-          difficulty: b.difficulty || 0,
-          chainwork: b.chainwork || '',
-          previousblockhash: b.previous_block_hash || '',
-          nextblockhash: b.next_block_hash || '',
-          confirmations: b.confirmations || 1,
-        };
-
-        return NextResponse.json({
-          block: formattedBlock,
-          durationMs: 45,
-        });
-      }
-    }
-  } catch (err: any) {}
-
-  // 3. Query direct JSON-RPC node fallback
+  // === 1. Try direct Zcash node RPC ===
   try {
     let blockHash = trimmedQuery;
     if (/^\d+$/.test(trimmedQuery)) {
       const hashRes = await callZcashRpc<string>('getblockhash', [parseInt(trimmedQuery, 10)], network);
-      if (hashRes.result) blockHash = hashRes.result;
+      if (hashRes.result) {
+        blockHash = hashRes.result;
+      }
     }
     const blockRes = await callZcashRpc('getblock', [blockHash, 1], network);
     if (blockRes.result && blockRes.result.hash) {
-      return NextResponse.json({ block: blockRes.result, durationMs: blockRes.durationMs });
+      return NextResponse.json({
+        source: 'node',
+        block: blockRes.result,
+        durationMs: blockRes.durationMs,
+      });
     }
-  } catch (err: any) {}
+  } catch (err) {
+    // Node not available, try indexer
+  }
 
-  return NextResponse.json({ error: `Block ${trimmedQuery} not found on Zcash network` }, { status: 404 });
+  // === 2. Fallback: Blockchair indexer (mainnet only) ===
+  if (network === 'mainnet') {
+    try {
+      const res = await fetch(
+        `https://api.blockchair.com/zcash/dashboards/block/${encodeURIComponent(trimmedQuery)}`,
+        {
+          headers: { 'User-Agent': 'ZecSpectra/1.0' },
+          signal: AbortSignal.timeout(6000),
+        }
+      );
+
+      if (res.ok) {
+        const data = await res.json();
+        const blockKey = Object.keys(data.data || {})[0];
+        const blockData = data.data?.[blockKey];
+
+        if (blockData && blockData.block) {
+          const b = blockData.block;
+          const txs: string[] = Array.isArray(blockData.transactions) ? blockData.transactions : [];
+
+          const formattedBlock = {
+            hash: b.hash,
+            height: b.id,
+            size: b.size,
+            version: b.version,
+            merkleroot: b.merkleroot || '',
+            tx: txs,
+            time: Math.floor(new Date(b.time).getTime() / 1000),
+            nonce: String(b.nonce || ''),
+            bits: b.bits || '',
+            difficulty: b.difficulty || 0,
+            chainwork: b.chainwork || '',
+            previousblockhash: b.previous_block_hash || '',
+            nextblockhash: b.next_block_hash || '',
+            confirmations: b.confirmations || 0,
+          };
+
+          return NextResponse.json({
+            source: 'indexer',
+            block: formattedBlock,
+            durationMs: 0,
+          });
+        }
+      }
+    } catch (err) {
+      // Indexer also failed
+    }
+  }
+
+  // === 3. Not found ===
+  return NextResponse.json(
+    { error: `Block "${trimmedQuery}" not found. Ensure a Zcash node is connected or the block exists on mainnet.` },
+    { status: 404 }
+  );
 }

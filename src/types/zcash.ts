@@ -77,6 +77,7 @@ export interface BlockHeader {
 
 export interface TelemetrySummary {
   nodeConnected: boolean;
+  dataSource: 'node' | 'indexer' | 'none';
   nodeUrl: string;
   network: string;
   blockHeight: number;

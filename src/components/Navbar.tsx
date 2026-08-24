@@ -14,7 +14,6 @@ interface NavbarProps {
   setAutoRefresh: (val: boolean) => void;
   network: 'mainnet' | 'testnet';
   setNetwork: (net: 'mainnet' | 'testnet') => void;
-  onOpenConnectModal: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -27,26 +26,25 @@ export const Navbar: React.FC<NavbarProps> = ({
   setAutoRefresh,
   network,
   setNetwork,
-  onOpenConnectModal,
 }) => {
   const isConnected = telemetry?.nodeConnected;
+  const dataSource = telemetry?.dataSource || 'none';
 
   return (
     <header className="sticky top-0 z-50 border-b border-zcash-border/80 bg-zcash-dark/90 backdrop-blur-xl">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex h-16 items-center justify-between gap-4">
+        <div className="flex h-16 items-center justify-between gap-2">
           
-          {/* Logo & Brand */}
-          <div className="flex items-center gap-3">
-            <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-zcash-gold/10 border border-zcash-gold/30 shadow-[0_0_15px_rgba(244,183,40,0.2)]">
-              <Shield className="h-5 w-5 text-zcash-gold" />
+          {/* Logo */}
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-zcash-gold/10 border border-zcash-gold/30 shadow-[0_0_15px_rgba(244,183,40,0.2)]">
+              <Shield className="h-4.5 w-4.5 text-zcash-gold" />
             </div>
-            <div>
+            <div className="hidden sm:block">
               <div className="flex items-center gap-2">
                 <span className="text-lg font-extrabold tracking-tight text-white">
                   Zec<span className="text-zcash-gold">Spectra</span>
                 </span>
-                {/* Network Switcher Pill */}
                 <div className="flex items-center rounded-full bg-zcash-navy border border-zcash-border p-0.5 text-[10px] font-bold">
                   <button
                     onClick={() => setNetwork('mainnet')}
@@ -70,97 +68,49 @@ export const Navbar: React.FC<NavbarProps> = ({
                   </button>
                 </div>
               </div>
-              <p className="text-[11px] text-zinc-400">Zcash Protocol Telemetry & Power Tools</p>
+              <p className="text-[10px] text-zinc-500">Zcash Protocol Telemetry</p>
             </div>
           </div>
 
-          {/* Navigation Tabs */}
-          <nav className="hidden md:flex items-center gap-1 bg-zcash-navy/90 p-1.5 rounded-xl border border-zcash-border">
-            <button
-              onClick={() => setActiveTab('dashboard')}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                activeTab === 'dashboard'
-                  ? 'bg-zcash-gold text-zcash-dark shadow-md shadow-zcash-gold/20 font-bold'
-                  : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60'
-              }`}
-            >
-              <Activity className="h-4 w-4" />
-              Dashboard
-            </button>
-            <button
-              onClick={() => setActiveTab('streamer')}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                activeTab === 'streamer'
-                  ? 'bg-zcash-gold text-zcash-dark shadow-md shadow-zcash-gold/20 font-bold'
-                  : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60'
-              }`}
-            >
-              <Zap className="h-4 w-4" />
-              Streamer
-            </button>
-            <button
-              onClick={() => setActiveTab('tools')}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                activeTab === 'tools'
-                  ? 'bg-zcash-gold text-zcash-dark shadow-md shadow-zcash-gold/20 font-bold'
-                  : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60'
-              }`}
-            >
-              <Cpu className="h-4 w-4" />
-              Power Tools
-            </button>
-            <button
-              onClick={() => setActiveTab('rpc')}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                activeTab === 'rpc'
-                  ? 'bg-zcash-gold text-zcash-dark shadow-md shadow-zcash-gold/20 font-bold'
-                  : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60'
-              }`}
-            >
-              <Terminal className="h-4 w-4" />
-              RPC Studio
-            </button>
-            <button
-              onClick={() => setActiveTab('explorer')}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                activeTab === 'explorer'
-                  ? 'bg-zcash-gold text-zcash-dark shadow-md shadow-zcash-gold/20 font-bold'
-                  : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60'
-              }`}
-            >
-              <Layers className="h-4 w-4" />
-              Explorer
-            </button>
-            <button
-              onClick={() => setActiveTab('peers')}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                activeTab === 'peers'
-                  ? 'bg-zcash-gold text-zcash-dark shadow-md shadow-zcash-gold/20 font-bold'
-                  : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60'
-              }`}
-            >
-              <Users className="h-4 w-4" />
-              Peers ({telemetry?.peerCount ?? 0})
-            </button>
+          {/* Desktop Nav */}
+          <nav className="hidden lg:flex items-center gap-1 bg-zcash-navy/90 p-1 rounded-xl border border-zcash-border">
+            {([
+              { key: 'dashboard', label: 'Dashboard', icon: Activity },
+              { key: 'streamer', label: 'Streamer', icon: Zap },
+              { key: 'tools', label: 'Tools', icon: Cpu },
+              { key: 'rpc', label: 'RPC Studio', icon: Terminal },
+              { key: 'explorer', label: 'Explorer', icon: Layers },
+            ] as const).map(({ key, label, icon: Icon }) => (
+              <button
+                key={key}
+                onClick={() => setActiveTab(key)}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  activeTab === key
+                    ? 'bg-zcash-gold text-zcash-dark shadow-md shadow-zcash-gold/20 font-bold'
+                    : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60'
+                }`}
+              >
+                <Icon className="h-3.5 w-3.5" />
+                {label}
+              </button>
+            ))}
           </nav>
 
-          {/* Right Status & Controls */}
-          <div className="flex items-center gap-3">
-            {/* Auto-refresh Switch */}
+          {/* Right Controls */}
+          <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={() => setAutoRefresh(!autoRefresh)}
               title="Toggle 5s Auto-refresh"
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-[11px] font-medium transition-all ${
+              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg border text-[11px] font-medium transition-all ${
                 autoRefresh
                   ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-400'
                   : 'border-zcash-border bg-zcash-navy text-zinc-400 hover:text-zinc-200'
               }`}
             >
-              <Radio className={`h-3.5 w-3.5 ${autoRefresh ? 'animate-pulse text-emerald-400' : ''}`} />
-              <span className="hidden sm:inline">Auto (5s)</span>
+              <Radio className={`h-3 w-3 ${autoRefresh ? 'animate-pulse text-emerald-400' : ''}`} />
+              <span className="hidden sm:inline">Auto</span>
             </button>
 
-            {/* Manual Refresh Button */}
             <button
               onClick={onRefresh}
               disabled={isLoading}
@@ -170,75 +120,59 @@ export const Navbar: React.FC<NavbarProps> = ({
               <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? 'animate-spin text-zcash-gold' : ''}`} />
             </button>
 
-            {/* Connect Node Modal Trigger Pill */}
-            <button
-              onClick={onOpenConnectModal}
-              title="Click to Connect Custom Local or Remote Node"
-              className="flex items-center gap-2.5 rounded-xl border border-zcash-border bg-zcash-navy px-3.5 py-1.5 transition-all hover:border-zcash-gold/60"
-            >
-              <div className="relative flex h-2.5 w-2.5">
-                <span
-                  className={`absolute inline-flex h-full w-full rounded-full opacity-75 ${
-                    isConnected ? 'animate-ping bg-emerald-400' : 'bg-rose-400'
-                  }`}
-                />
-                <span
-                  className={`relative inline-flex h-2.5 w-2.5 rounded-full ${
-                    isConnected ? 'bg-emerald-500' : 'bg-rose-500'
-                  }`}
-                />
+            {/* Status Pill */}
+            <div className="flex items-center gap-2 rounded-xl border border-zcash-border bg-zcash-navy px-3 py-1.5">
+              <div className="relative flex h-2 w-2">
+                <span className={`absolute inline-flex h-full w-full rounded-full opacity-75 ${
+                  dataSource === 'node' ? 'animate-ping bg-emerald-400'
+                    : dataSource === 'indexer' ? 'bg-amber-400'
+                    : 'bg-rose-400'
+                }`} />
+                <span className={`relative inline-flex h-2 w-2 rounded-full ${
+                  dataSource === 'node' ? 'bg-emerald-500'
+                    : dataSource === 'indexer' ? 'bg-amber-500'
+                    : 'bg-rose-500'
+                }`} />
               </div>
-              <div className="flex flex-col text-left">
-                <span className="text-[11px] font-bold text-zinc-100 leading-none">
-                  {isConnected ? `${network.toUpperCase()} Live` : 'Node Offline'}
-                </span>
-                <span className="text-[9px] text-zcash-gold leading-tight mt-0.5">
-                  ⚙️ Connect Node
-                </span>
-              </div>
-            </button>
-
+              <span className="text-[10px] font-bold text-zinc-200 leading-none">
+                {dataSource === 'node' ? `${network.toUpperCase()} Node`
+                  : dataSource === 'indexer' ? 'Indexer'
+                  : 'Disconnected'}
+              </span>
+            </div>
           </div>
         </div>
 
-        {/* Mobile Submenu Bar */}
-        <div className="flex md:hidden items-center justify-around py-2 border-t border-zcash-border overflow-x-auto">
-          <button
-            onClick={() => setActiveTab('dashboard')}
-            className={`text-xs px-2 py-1 rounded font-semibold whitespace-nowrap ${activeTab === 'dashboard' ? 'text-zcash-gold' : 'text-zinc-400'}`}
-          >
-            Dashboard
-          </button>
-          <button
-            onClick={() => setActiveTab('streamer')}
-            className={`text-xs px-2 py-1 rounded font-semibold whitespace-nowrap ${activeTab === 'streamer' ? 'text-zcash-gold' : 'text-zinc-400'}`}
-          >
-            Streamer
-          </button>
-          <button
-            onClick={() => setActiveTab('tools')}
-            className={`text-xs px-2 py-1 rounded font-semibold whitespace-nowrap ${activeTab === 'tools' ? 'text-zcash-gold' : 'text-zinc-400'}`}
-          >
-            Power Tools
-          </button>
-          <button
-            onClick={() => setActiveTab('rpc')}
-            className={`text-xs px-2 py-1 rounded font-semibold whitespace-nowrap ${activeTab === 'rpc' ? 'text-zcash-gold' : 'text-zinc-400'}`}
-          >
-            RPC Studio
-          </button>
-          <button
-            onClick={() => setActiveTab('explorer')}
-            className={`text-xs px-2 py-1 rounded font-semibold whitespace-nowrap ${activeTab === 'explorer' ? 'text-zcash-gold' : 'text-zinc-400'}`}
-          >
-            Explorer
-          </button>
-          <button
-            onClick={() => setActiveTab('peers')}
-            className={`text-xs px-2 py-1 rounded font-semibold whitespace-nowrap ${activeTab === 'peers' ? 'text-zcash-gold' : 'text-zinc-400'}`}
-          >
-            Peers
-          </button>
+        {/* Mobile Nav */}
+        <div className="flex lg:hidden items-center gap-1 py-2 border-t border-zcash-border overflow-x-auto">
+          {([
+            { key: 'dashboard', label: 'Dashboard' },
+            { key: 'streamer', label: 'Stream' },
+            { key: 'tools', label: 'Tools' },
+            { key: 'rpc', label: 'RPC' },
+            { key: 'explorer', label: 'Explorer' },
+          ] as const).map(({ key, label }) => (
+            <button
+              key={key}
+              onClick={() => setActiveTab(key)}
+              className={`text-xs px-2.5 py-1 rounded font-semibold whitespace-nowrap ${
+                activeTab === key ? 'text-zcash-gold bg-zcash-gold/10' : 'text-zinc-400'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+          {/* Mobile network switch */}
+          <div className="flex items-center rounded-full bg-zcash-navy border border-zcash-border p-0.5 text-[10px] font-bold ml-auto shrink-0">
+            <button
+              onClick={() => setNetwork('mainnet')}
+              className={`px-2 py-0.5 rounded-full ${network === 'mainnet' ? 'bg-zcash-gold text-zcash-dark' : 'text-zinc-400'}`}
+            >M</button>
+            <button
+              onClick={() => setNetwork('testnet')}
+              className={`px-2 py-0.5 rounded-full ${network === 'testnet' ? 'bg-zcash-gold text-zcash-dark' : 'text-zinc-400'}`}
+            >T</button>
+          </div>
         </div>
       </div>
     </header>

@@ -47,7 +47,7 @@ const PRESET_METHODS = [
   },
 ];
 
-export const RpcPlayground: React.FC = () => {
+export const RpcPlayground: React.FC<{ network?: 'mainnet' | 'testnet' }> = ({ network = 'mainnet' }) => {
   const [method, setMethod] = useState<string>('getblockchaininfo');
   const [paramsInput, setParamsInput] = useState<string>('[]');
   const [response, setResponse] = useState<RpcResponse | null>(null);
@@ -83,6 +83,7 @@ export const RpcPlayground: React.FC = () => {
         body: JSON.stringify({
           method: targetMethod,
           params: parsedParams,
+          network,
         }),
       });
 
