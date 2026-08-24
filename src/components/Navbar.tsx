@@ -14,6 +14,7 @@ interface NavbarProps {
   setAutoRefresh: (val: boolean) => void;
   network: 'mainnet' | 'testnet';
   setNetwork: (net: 'mainnet' | 'testnet') => void;
+  onOpenConnectModal: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -26,6 +27,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   setAutoRefresh,
   network,
   setNetwork,
+  onOpenConnectModal,
 }) => {
   const isConnected = telemetry?.nodeConnected;
 
@@ -168,8 +170,12 @@ export const Navbar: React.FC<NavbarProps> = ({
               <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? 'animate-spin text-zcash-gold' : ''}`} />
             </button>
 
-            {/* Node Connection Pill */}
-            <div className="flex items-center gap-2.5 rounded-xl border border-zcash-border bg-zcash-navy px-3.5 py-1.5">
+            {/* Connect Node Modal Trigger Pill */}
+            <button
+              onClick={onOpenConnectModal}
+              title="Click to Connect Custom Local or Remote Node"
+              className="flex items-center gap-2.5 rounded-xl border border-zcash-border bg-zcash-navy px-3.5 py-1.5 transition-all hover:border-zcash-gold/60"
+            >
               <div className="relative flex h-2.5 w-2.5">
                 <span
                   className={`absolute inline-flex h-full w-full rounded-full opacity-75 ${
@@ -182,17 +188,15 @@ export const Navbar: React.FC<NavbarProps> = ({
                   }`}
                 />
               </div>
-              <div className="flex flex-col">
+              <div className="flex flex-col text-left">
                 <span className="text-[11px] font-bold text-zinc-100 leading-none">
                   {isConnected ? `${network.toUpperCase()} Live` : 'Node Offline'}
                 </span>
-                {isConnected && (
-                  <span className="text-[9px] text-zinc-400 leading-tight">
-                    {telemetry?.latencyMs}ms ping
-                  </span>
-                )}
+                <span className="text-[9px] text-zcash-gold leading-tight mt-0.5">
+                  ⚙️ Connect Node
+                </span>
               </div>
-            </div>
+            </button>
 
           </div>
         </div>

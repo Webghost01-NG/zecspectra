@@ -10,6 +10,7 @@ import { RpcPlayground } from '@/components/RpcPlayground';
 import { BlockExplorerLite } from '@/components/BlockExplorerLite';
 import { PeerMap } from '@/components/PeerMap';
 import { ZcashPowerTools } from '@/components/ZcashPowerTools';
+import { ConnectNodeModal } from '@/components/ConnectNodeModal';
 import { TelemetrySummary } from '@/types/zcash';
 import { Sparkles, Terminal, ArrowRight, Zap, Cpu } from '@/components/Icons';
 
@@ -18,11 +19,16 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [autoRefresh, setAutoRefresh] = useState<boolean>(true);
   const [network, setNetwork] = useState<'mainnet' | 'testnet'>('mainnet');
+  const [customNodeUrl, setCustomNodeUrl] = useState<string>('');
+  const [isConnectModalOpen, setIsConnectModalOpen] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'streamer' | 'rpc' | 'explorer' | 'tools' | 'peers'>('dashboard');
 
   const fetchTelemetry = useCallback(async () => {
     try {
-      const res = await fetch(`/api/telemetry?network=${network}`);
+      const url = customNodeUrl 
+        ? `/api/telemetry?rpcUrl=${encodeURIComponent(customNodeUrl)}&network=${network}`
+        : `/api/telemetry?network=${network}`;
+      const res = await fetch(url);
       if (res.ok) {
         const data: TelemetrySummary = await res.json();
         setTelemetry(data);
@@ -32,7 +38,7 @@ export default function Home() {
     } finally {
       setIsLoading(false);
     }
-  }, [network]);
+  }, [network, customNodeUrl]);
 
   useEffect(() => {
     fetchTelemetry();
@@ -45,6 +51,10 @@ export default function Home() {
     }, 5000);
     return () => clearInterval(interval);
   }, [autoRefresh, fetchTelemetry]);
+
+  const handleSaveNode = (url: string) => {
+    setCustomNodeUrl(url);
+  };
 
   return (
     <div className="min-h-screen bg-zcash-dark text-zinc-100 selection:bg-zcash-gold selection:text-zcash-dark">
@@ -59,6 +69,15 @@ export default function Home() {
         setAutoRefresh={setAutoRefresh}
         network={network}
         setNetwork={setNetwork}
+        onOpenConnectModal={() => setIsConnectModalOpen(true)}
+      />
+
+      {/* Connect Custom Node Modal */}
+      <ConnectNodeModal
+        isOpen={isConnectModalOpen}
+        onClose={() => setIsConnectModalOpen(false)}
+        currentNodeUrl={customNodeUrl}
+        onSaveNode={handleSaveNode}
       />
 
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 space-y-8">
@@ -72,32 +91,32 @@ export default function Home() {
             <div className="space-y-2 max-w-2xl">
               <div className="inline-flex items-center gap-2 rounded-full border border-zcash-gold/30 bg-zcash-gold/10 px-3.5 py-1 text-xs font-bold text-zcash-gold">
                 <Sparkles className="h-3.5 w-3.5" />
-                <span>Zcash Mini Build Challenge &bull; Next-Gen Telemetry & Developer Cockpit</span>
+                <span>Zcash Mini Build Challenge &bull; Next-Gen Telemetry & Node Cockpit</span>
               </div>
               <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-white leading-tight">
                 Zero-Knowledge Telemetry & <span className="bg-gradient-to-r from-zcash-gold via-yellow-300 to-amber-500 bg-clip-text text-transparent">Power Tools</span>
               </h1>
               <p className="text-sm text-zinc-400 leading-relaxed">
-                A high-performance developer cockpit wired directly to Zcash network nodes. Inspect transparent & shielded pools (<span className="text-zinc-200 font-semibold">Sprout</span>, <span className="text-zinc-200 font-semibold">Sapling</span>, <span className="text-zinc-200 font-semibold">Orchard/Halo 2</span>), decode Unified Addresses (ZIP-316), estimate ZIP-317 fees, and dissect live blocks in real-time.
+                A high-performance developer cockpit wired directly to Zcash network nodes. Inspect transparent & shielded pools (<span className="text-zinc-200 font-semibold">Sprout</span>, <span className="text-zinc-200 font-semibold">Sapling</span>, <span className="text-zinc-200 font-semibold">Orchard/Halo 2</span>), decode Unified Addresses (ZIP-316), estimate ZIP-317 fees, and dissect live on-chain blocks.
               </p>
             </div>
 
             {/* Quick Action Buttons */}
             <div className="flex flex-wrap items-center gap-3">
               <button
-                onClick={() => setActiveTab('tools')}
+                onClick={() => setIsConnectModalOpen(true)}
                 className="flex items-center gap-2 rounded-xl bg-zcash-gold px-4 py-2.5 text-xs font-bold text-zcash-dark shadow-lg shadow-zcash-gold/20 hover:bg-zcash-goldHover transition-all"
               >
-                <Cpu className="h-4 w-4" />
-                <span>UA Decoder & Tools</span>
+                <Terminal className="h-4 w-4" />
+                <span>Connect Custom Node</span>
                 <ArrowRight className="h-3.5 w-3.5" />
               </button>
               <button
-                onClick={() => setActiveTab('streamer')}
+                onClick={() => setActiveTab('tools')}
                 className="flex items-center gap-2 rounded-xl border border-zcash-border bg-zcash-navy px-4 py-2.5 text-xs font-semibold text-zinc-200 hover:text-white hover:bg-zinc-800 transition-all"
               >
-                <Zap className="h-4 w-4 text-zcash-gold" />
-                <span>Live Streamer</span>
+                <Cpu className="h-4 w-4 text-zcash-gold" />
+                <span>UA Tools</span>
               </button>
             </div>
           </div>
