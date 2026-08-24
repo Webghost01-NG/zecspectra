@@ -1,38 +1,38 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { callZcashRpc, ZCASH_DEFAULT_RPC } from '@/lib/zcash-rpc';
+import { callZcashRpc } from '@/lib/zcash-rpc';
+
+export const dynamic = 'force-dynamic';
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const query = searchParams.get('query'); // height or hash
-  const rpcUrl = searchParams.get('rpcUrl') || ZCASH_DEFAULT_RPC;
+  const query = searchParams.get('query');
+  const network = (searchParams.get('network') === 'testnet' ? 'testnet' : 'mainnet') as 'mainnet' | 'testnet';
 
   if (!query) {
     return NextResponse.json({ error: 'Query parameter (block height or hash) is required' }, { status: 400 });
   }
 
   try {
-    let blockHash = query;
+    let blockHash = query.trim();
 
-    // If query is an integer height, fetch block hash first using getblockhash
-    if (/^\d+$/.test(query)) {
-      const hashRes = await callZcashRpc<string>('getblockhash', [parseInt(query, 10)], rpcUrl);
-      if (hashRes.error || !hashRes.result) {
-        return NextResponse.json({ error: hashRes.error?.message || 'Block height not found' }, { status: 404 });
+    if (/^\d+$/.test(blockHash)) {
+      const heightNum = parseInt(blockHash, 10);
+      const hashRes = await callZcashRpc<string>('getblockhash', [heightNum], network);
+      if (hashRes.result) {
+        blockHash = hashRes.result;
       }
-      blockHash = hashRes.result;
     }
 
-    // Verbose 1 = parsed block object
-    const blockRes = await callZcashRpc('getblock', [blockHash, 1], rpcUrl);
-    if (blockRes.error) {
-      return NextResponse.json({ error: blockRes.error.message }, { status: 404 });
+    const blockRes = await callZcashRpc('getblock', [blockHash, 1], network);
+    if (blockRes.result) {
+      return NextResponse.json({
+        block: blockRes.result,
+        durationMs: blockRes.durationMs,
+      });
     }
 
-    return NextResponse.json({
-      block: blockRes.result,
-      durationMs: blockRes.durationMs,
-    });
+    return NextResponse.json({ error: 'Block not found' }, { status: 404 });
   } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return NextResponse.json({ error: err.message || 'Block query failed' }, { status: 500 });
   }
 }

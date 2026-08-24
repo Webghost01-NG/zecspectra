@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { callZcashRpc, ZCASH_DEFAULT_RPC } from '@/lib/zcash-rpc';
+import { callZcashRpc } from '@/lib/zcash-rpc';
+
+export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { method, params = [], rpcUrl } = body;
+    const { method, params = [], network = 'mainnet' } = body;
 
     if (!method) {
       return NextResponse.json(
@@ -17,9 +19,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const targetRpc = rpcUrl || ZCASH_DEFAULT_RPC;
-    const result = await callZcashRpc(method, params, targetRpc);
-
+    const result = await callZcashRpc(method, params, network);
     return NextResponse.json(result);
   } catch (err: any) {
     return NextResponse.json(
