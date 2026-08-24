@@ -1,13 +1,13 @@
 'use client';
 
 import React from 'react';
-import { Shield, Radio, Activity, Terminal, Layers, Users, RefreshCw, Zap, Globe } from '@/components/Icons';
+import { Shield, Radio, Activity, Terminal, Layers, Users, RefreshCw, Zap, Cpu } from '@/components/Icons';
 import { TelemetrySummary } from '@/types/zcash';
 
 interface NavbarProps {
   telemetry: TelemetrySummary | null;
-  activeTab: 'dashboard' | 'streamer' | 'rpc' | 'explorer' | 'peers';
-  setActiveTab: (tab: 'dashboard' | 'streamer' | 'rpc' | 'explorer' | 'peers') => void;
+  activeTab: 'dashboard' | 'streamer' | 'rpc' | 'explorer' | 'tools' | 'peers';
+  setActiveTab: (tab: 'dashboard' | 'streamer' | 'rpc' | 'explorer' | 'tools' | 'peers') => void;
   isLoading: boolean;
   onRefresh: () => void;
   autoRefresh: boolean;
@@ -68,7 +68,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   </button>
                 </div>
               </div>
-              <p className="text-[11px] text-zinc-400">Zcash Protocol Telemetry & RPC Studio</p>
+              <p className="text-[11px] text-zinc-400">Zcash Protocol Telemetry & Power Tools</p>
             </div>
           </div>
 
@@ -76,7 +76,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <nav className="hidden md:flex items-center gap-1 bg-zcash-navy/90 p-1.5 rounded-xl border border-zcash-border">
             <button
               onClick={() => setActiveTab('dashboard')}
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                 activeTab === 'dashboard'
                   ? 'bg-zcash-gold text-zcash-dark shadow-md shadow-zcash-gold/20 font-bold'
                   : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60'
@@ -87,18 +87,29 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
             <button
               onClick={() => setActiveTab('streamer')}
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                 activeTab === 'streamer'
                   ? 'bg-zcash-gold text-zcash-dark shadow-md shadow-zcash-gold/20 font-bold'
                   : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60'
               }`}
             >
               <Zap className="h-4 w-4" />
-              Live Streamer
+              Streamer
+            </button>
+            <button
+              onClick={() => setActiveTab('tools')}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                activeTab === 'tools'
+                  ? 'bg-zcash-gold text-zcash-dark shadow-md shadow-zcash-gold/20 font-bold'
+                  : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60'
+              }`}
+            >
+              <Cpu className="h-4 w-4" />
+              Power Tools
             </button>
             <button
               onClick={() => setActiveTab('rpc')}
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                 activeTab === 'rpc'
                   ? 'bg-zcash-gold text-zcash-dark shadow-md shadow-zcash-gold/20 font-bold'
                   : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60'
@@ -109,18 +120,18 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
             <button
               onClick={() => setActiveTab('explorer')}
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                 activeTab === 'explorer'
                   ? 'bg-zcash-gold text-zcash-dark shadow-md shadow-zcash-gold/20 font-bold'
                   : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60'
               }`}
             >
               <Layers className="h-4 w-4" />
-              Block Explorer
+              Explorer
             </button>
             <button
               onClick={() => setActiveTab('peers')}
-              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                 activeTab === 'peers'
                   ? 'bg-zcash-gold text-zcash-dark shadow-md shadow-zcash-gold/20 font-bold'
                   : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/60'
@@ -198,7 +209,13 @@ export const Navbar: React.FC<NavbarProps> = ({
             onClick={() => setActiveTab('streamer')}
             className={`text-xs px-2 py-1 rounded font-semibold whitespace-nowrap ${activeTab === 'streamer' ? 'text-zcash-gold' : 'text-zinc-400'}`}
           >
-            Live Streamer
+            Streamer
+          </button>
+          <button
+            onClick={() => setActiveTab('tools')}
+            className={`text-xs px-2 py-1 rounded font-semibold whitespace-nowrap ${activeTab === 'tools' ? 'text-zcash-gold' : 'text-zinc-400'}`}
+          >
+            Power Tools
           </button>
           <button
             onClick={() => setActiveTab('rpc')}

@@ -9,15 +9,16 @@ import { LiveTxStreamer } from '@/components/LiveTxStreamer';
 import { RpcPlayground } from '@/components/RpcPlayground';
 import { BlockExplorerLite } from '@/components/BlockExplorerLite';
 import { PeerMap } from '@/components/PeerMap';
+import { ZcashPowerTools } from '@/components/ZcashPowerTools';
 import { TelemetrySummary } from '@/types/zcash';
-import { Sparkles, Terminal, ArrowRight, Zap } from '@/components/Icons';
+import { Sparkles, Terminal, ArrowRight, Zap, Cpu } from '@/components/Icons';
 
 export default function Home() {
   const [telemetry, setTelemetry] = useState<TelemetrySummary | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [autoRefresh, setAutoRefresh] = useState<boolean>(true);
   const [network, setNetwork] = useState<'mainnet' | 'testnet'>('mainnet');
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'streamer' | 'rpc' | 'explorer' | 'peers'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'streamer' | 'rpc' | 'explorer' | 'tools' | 'peers'>('dashboard');
 
   const fetchTelemetry = useCallback(async () => {
     try {
@@ -71,32 +72,32 @@ export default function Home() {
             <div className="space-y-2 max-w-2xl">
               <div className="inline-flex items-center gap-2 rounded-full border border-zcash-gold/30 bg-zcash-gold/10 px-3.5 py-1 text-xs font-bold text-zcash-gold">
                 <Sparkles className="h-3.5 w-3.5" />
-                <span>Zcash Mini Build Challenge &bull; Next-Gen Telemetry & RPC Studio</span>
+                <span>Zcash Mini Build Challenge &bull; Next-Gen Telemetry & Developer Cockpit</span>
               </div>
               <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-white leading-tight">
-                Zero-Knowledge Telemetry & <span className="bg-gradient-to-r from-zcash-gold via-yellow-300 to-amber-500 bg-clip-text text-transparent">RPC Studio</span>
+                Zero-Knowledge Telemetry & <span className="bg-gradient-to-r from-zcash-gold via-yellow-300 to-amber-500 bg-clip-text text-transparent">Power Tools</span>
               </h1>
               <p className="text-sm text-zinc-400 leading-relaxed">
-                A high-performance developer cockpit wired directly to Zcash network nodes. Inspect transparent & shielded pools (<span className="text-zinc-200 font-semibold">Sprout</span>, <span className="text-zinc-200 font-semibold">Sapling</span>, <span className="text-zinc-200 font-semibold">Orchard/Halo 2</span>), benchmark raw JSON-RPC 2.0 calls, stream live block transactions, and dissect blocks in real-time.
+                A high-performance developer cockpit wired directly to Zcash network nodes. Inspect transparent & shielded pools (<span className="text-zinc-200 font-semibold">Sprout</span>, <span className="text-zinc-200 font-semibold">Sapling</span>, <span className="text-zinc-200 font-semibold">Orchard/Halo 2</span>), decode Unified Addresses (ZIP-316), estimate ZIP-317 fees, and dissect live blocks in real-time.
               </p>
             </div>
 
             {/* Quick Action Buttons */}
             <div className="flex flex-wrap items-center gap-3">
               <button
-                onClick={() => setActiveTab('streamer')}
+                onClick={() => setActiveTab('tools')}
                 className="flex items-center gap-2 rounded-xl bg-zcash-gold px-4 py-2.5 text-xs font-bold text-zcash-dark shadow-lg shadow-zcash-gold/20 hover:bg-zcash-goldHover transition-all"
               >
-                <Zap className="h-4 w-4" />
-                <span>Live Block Streamer</span>
+                <Cpu className="h-4 w-4" />
+                <span>UA Decoder & Tools</span>
                 <ArrowRight className="h-3.5 w-3.5" />
               </button>
               <button
-                onClick={() => setActiveTab('rpc')}
+                onClick={() => setActiveTab('streamer')}
                 className="flex items-center gap-2 rounded-xl border border-zcash-border bg-zcash-navy px-4 py-2.5 text-xs font-semibold text-zinc-200 hover:text-white hover:bg-zinc-800 transition-all"
               >
-                <Terminal className="h-4 w-4 text-zcash-gold" />
-                <span>RPC Studio</span>
+                <Zap className="h-4 w-4 text-zcash-gold" />
+                <span>Live Streamer</span>
               </button>
             </div>
           </div>
@@ -115,6 +116,12 @@ export default function Home() {
         {activeTab === 'streamer' && (
           <div className="space-y-8">
             <LiveTxStreamer />
+          </div>
+        )}
+
+        {activeTab === 'tools' && (
+          <div className="space-y-8">
+            <ZcashPowerTools />
           </div>
         )}
 
