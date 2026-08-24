@@ -12,6 +12,7 @@ interface BlockExplorerLiteProps {
 export const BlockExplorerLite: React.FC<BlockExplorerLiteProps> = ({ currentHeight, network = 'mainnet' }) => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [blockData, setBlockData] = useState<any | null>(null);
+  const [blockSource, setBlockSource] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -26,8 +27,10 @@ export const BlockExplorerLite: React.FC<BlockExplorerLiteProps> = ({ currentHei
       if (!res.ok || data.error) {
         setError(data.error || 'Failed to fetch block');
         setBlockData(null);
+        setBlockSource('');
       } else {
         setBlockData(data.block);
+        setBlockSource(data.source || '');
       }
     } catch (err: any) {
       setError(err.message || 'Block query failed');
@@ -145,10 +148,19 @@ export const BlockExplorerLite: React.FC<BlockExplorerLiteProps> = ({ currentHei
 
           {/* Detailed Fields Table */}
           <div className="rounded-2xl border border-zinc-800 bg-zinc-950/70 overflow-hidden shadow-xl">
-            <div className="border-b border-zinc-800/80 bg-zinc-900/60 px-5 py-3.5">
+            <div className="flex items-center justify-between border-b border-zinc-800/80 bg-zinc-900/60 px-5 py-3.5">
               <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-300">
                 Block Header & Merkle Commitments
               </h3>
+              {blockSource && (
+                <span className={`rounded-md px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider border ${
+                  blockSource === 'node'
+                    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                    : 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                }`}>
+                  Source: {blockSource === 'node' ? 'Zebra RPC' : 'Blockchair Indexer'}
+                </span>
+              )}
             </div>
 
             <div className="divide-y divide-zinc-800/60 text-xs font-mono">

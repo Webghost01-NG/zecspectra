@@ -50,7 +50,7 @@ export const LiveTxStreamer: React.FC<LiveTxStreamerProps> = ({ network = 'mainn
   useEffect(() => {
     fetchConfirmedStream();
     if (!isListening) return;
-    const interval = setInterval(fetchConfirmedStream, 4000);
+    const interval = setInterval(fetchConfirmedStream, 15000);
     return () => clearInterval(interval);
   }, [isListening, network]);
 
@@ -107,7 +107,7 @@ export const LiveTxStreamer: React.FC<LiveTxStreamerProps> = ({ network = 'mainn
             }`}
           >
             <Radio className={`h-3.5 w-3.5 ${isListening ? 'animate-ping text-emerald-400' : ''}`} />
-            <span>{isListening ? 'Streaming (4s)' : 'Paused'}</span>
+            <span>{isListening ? 'Polling (15s)' : 'Paused'}</span>
           </button>
         </div>
       </div>

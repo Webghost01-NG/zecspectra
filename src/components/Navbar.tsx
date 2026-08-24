@@ -6,8 +6,8 @@ import { TelemetrySummary } from '@/types/zcash';
 
 interface NavbarProps {
   telemetry: TelemetrySummary | null;
-  activeTab: 'dashboard' | 'streamer' | 'rpc' | 'explorer' | 'tools' | 'peers';
-  setActiveTab: (tab: 'dashboard' | 'streamer' | 'rpc' | 'explorer' | 'tools' | 'peers') => void;
+  activeTab: 'dashboard' | 'streamer' | 'rpc' | 'explorer' | 'tools';
+  setActiveTab: (tab: 'dashboard' | 'streamer' | 'rpc' | 'explorer' | 'tools') => void;
   isLoading: boolean;
   onRefresh: () => void;
   autoRefresh: boolean;
@@ -144,34 +144,36 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
 
         {/* Mobile Nav */}
-        <div className="flex lg:hidden items-center gap-1 py-2 border-t border-zcash-border overflow-x-auto">
-          {([
-            { key: 'dashboard', label: 'Dashboard' },
-            { key: 'streamer', label: 'Stream' },
-            { key: 'tools', label: 'Tools' },
-            { key: 'rpc', label: 'RPC' },
-            { key: 'explorer', label: 'Explorer' },
-          ] as const).map(({ key, label }) => (
-            <button
-              key={key}
-              onClick={() => setActiveTab(key)}
-              className={`text-xs px-2.5 py-1 rounded font-semibold whitespace-nowrap ${
-                activeTab === key ? 'text-zcash-gold bg-zcash-gold/10' : 'text-zinc-400'
-              }`}
-            >
-              {label}
-            </button>
-          ))}
+        <div className="flex lg:hidden items-center justify-between gap-1 py-2 border-t border-zcash-border">
+          <div className="flex items-center gap-0.5 sm:gap-1">
+            {([
+              { key: 'dashboard', label: 'Dash' },
+              { key: 'streamer', label: 'Stream' },
+              { key: 'tools', label: 'Tools' },
+              { key: 'rpc', label: 'RPC' },
+              { key: 'explorer', label: 'Explorer' },
+            ] as const).map(({ key, label }) => (
+              <button
+                key={key}
+                onClick={() => setActiveTab(key)}
+                className={`text-[11px] sm:text-xs px-2 py-1 rounded font-semibold whitespace-nowrap transition-colors ${
+                  activeTab === key ? 'text-zcash-gold bg-zcash-gold/10' : 'text-zinc-400 hover:text-zinc-200'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
           {/* Mobile network switch */}
-          <div className="flex items-center rounded-full bg-zcash-navy border border-zcash-border p-0.5 text-[10px] font-bold ml-auto shrink-0">
+          <div className="flex items-center rounded-full bg-zcash-navy border border-zcash-border p-0.5 text-[9px] sm:text-[10px] font-bold shrink-0">
             <button
               onClick={() => setNetwork('mainnet')}
-              className={`px-2 py-0.5 rounded-full ${network === 'mainnet' ? 'bg-zcash-gold text-zcash-dark' : 'text-zinc-400'}`}
-            >M</button>
+              className={`px-1.5 py-0.5 rounded-full ${network === 'mainnet' ? 'bg-zcash-gold text-zcash-dark' : 'text-zinc-400'}`}
+            >MAIN</button>
             <button
               onClick={() => setNetwork('testnet')}
-              className={`px-2 py-0.5 rounded-full ${network === 'testnet' ? 'bg-zcash-gold text-zcash-dark' : 'text-zinc-400'}`}
-            >T</button>
+              className={`px-1.5 py-0.5 rounded-full ${network === 'testnet' ? 'bg-zcash-gold text-zcash-dark' : 'text-zinc-400'}`}
+            >TEST</button>
           </div>
         </div>
       </div>

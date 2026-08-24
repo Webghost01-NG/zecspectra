@@ -1,12 +1,27 @@
 import { RpcResponse } from '@/types/zcash';
 
+// Mainnet: try configured env first, then local Zebra default
 export const ZCASH_MAINNET_RPC = process.env.ZCASH_MAINNET_RPC || 'http://127.0.0.1:8232';
 export const ZCASH_TESTNET_RPC = process.env.ZCASH_TESTNET_RPC || 'http://127.0.0.1:18232';
+
+// Read-only methods that are safe to expose publicly
+export const RPC_ALLOWLIST = new Set([
+  'getblockchaininfo',
+  'getpeerinfo',
+  'getmempoolinfo',
+  'getnetworksolps',
+  'getblock',
+  'getblockhash',
+  'getblockcount',
+  'getbestblockhash',
+  'getinfo',
+  'getdeprecationinfo',
+]);
 
 /**
  * Send a JSON-RPC 2.0 call to a Zcash node (Zebra or zcashd).
  * Returns the raw RPC response. If the call fails, throws an error.
- * NO mock data. NO synthetic fallbacks. If the node is unreachable, the caller handles the error.
+ * NO mock data. NO synthetic fallbacks.
  */
 export async function callZcashRpc<T = any>(
   method: string,

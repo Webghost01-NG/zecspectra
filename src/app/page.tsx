@@ -8,7 +8,6 @@ import { ConsensusUpgrades } from '@/components/ConsensusUpgrades';
 import { LiveTxStreamer } from '@/components/LiveTxStreamer';
 import { RpcPlayground } from '@/components/RpcPlayground';
 import { BlockExplorerLite } from '@/components/BlockExplorerLite';
-import { PeerMap } from '@/components/PeerMap';
 import { ZcashPowerTools } from '@/components/ZcashPowerTools';
 import { TelemetrySummary } from '@/types/zcash';
 import { Sparkles, Cpu } from '@/components/Icons';
@@ -18,7 +17,7 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [autoRefresh, setAutoRefresh] = useState<boolean>(true);
   const [network, setNetwork] = useState<'mainnet' | 'testnet'>('mainnet');
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'streamer' | 'rpc' | 'explorer' | 'tools' | 'peers'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'streamer' | 'rpc' | 'explorer' | 'tools'>('dashboard');
 
   const fetchTelemetry = useCallback(async () => {
     try {
@@ -41,7 +40,7 @@ export default function Home() {
 
   useEffect(() => {
     if (!autoRefresh) return;
-    const interval = setInterval(fetchTelemetry, 5000);
+    const interval = setInterval(fetchTelemetry, 15000); // 15s polling
     return () => clearInterval(interval);
   }, [autoRefresh, fetchTelemetry]);
 
@@ -62,12 +61,10 @@ export default function Home() {
       />
 
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 space-y-8">
-        
+
         {/* Hero */}
         <section className="relative overflow-hidden rounded-3xl border border-zcash-border bg-gradient-to-b from-zcash-card/90 via-zcash-dark/90 to-zcash-dark p-6 sm:p-8 backdrop-blur-xl shadow-2xl">
           <div className="absolute top-0 right-0 -mr-16 -mt-16 h-64 w-64 rounded-full bg-zcash-gold/10 blur-3xl pointer-events-none" />
-          <div className="absolute bottom-0 left-0 -ml-16 -mb-16 h-64 w-64 rounded-full bg-zcash-shield/10 blur-3xl pointer-events-none" />
-
           <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
             <div className="space-y-2 max-w-2xl">
               <div className="inline-flex items-center gap-2 rounded-full border border-zcash-gold/30 bg-zcash-gold/10 px-3.5 py-1 text-xs font-bold text-zcash-gold">
@@ -75,28 +72,30 @@ export default function Home() {
                 <span>Zcash Mini Build Challenge</span>
               </div>
               <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-white leading-tight">
-                Zero-Knowledge Telemetry & <span className="bg-gradient-to-r from-zcash-gold via-yellow-300 to-amber-500 bg-clip-text text-transparent">Power Tools</span>
+                Network Telemetry <span className="bg-gradient-to-r from-zcash-gold via-yellow-300 to-amber-500 bg-clip-text text-transparent">Dashboard</span>
               </h1>
               <p className="text-sm text-zinc-400 leading-relaxed">
-                A developer cockpit connected to the Zcash network via JSON-RPC 2.0. 
-                Inspect shielded pools, browse blocks, analyze addresses, estimate ZIP-317 fees, 
-                and execute raw RPC commands.
+                {dataSource === 'node'
+                  ? 'Connected to a Zcash node via JSON-RPC 2.0. All dashboard data is retrieved directly from the node.'
+                  : dataSource === 'indexer'
+                  ? 'Dashboard data from Blockchair indexer API. Connect a Zcash node for full RPC access and proof of connectivity.'
+                  : 'No data source available. Configure a Zcash node endpoint to enable live data.'}
               </p>
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
               <button
-                onClick={() => setActiveTab('tools')}
+                onClick={() => setActiveTab('rpc')}
                 className="flex items-center gap-2 rounded-xl border border-zcash-border bg-zcash-navy px-4 py-2.5 text-xs font-semibold text-zinc-200 hover:text-white hover:bg-zinc-800 transition-all"
               >
                 <Cpu className="h-4 w-4 text-zcash-gold" />
-                <span>Address Inspector & Tools</span>
+                <span>RPC Studio</span>
               </button>
             </div>
           </div>
         </section>
 
-        {/* Tab Content — network is passed to every child */}
+        {/* Tab Content */}
         {activeTab === 'dashboard' && (
           <div className="space-y-8">
             <TelemetryOverview telemetry={telemetry} isLoading={isLoading} />
@@ -126,36 +125,29 @@ export default function Home() {
           <BlockExplorerLite currentHeight={telemetry?.blockHeight || 0} network={network} />
         )}
 
-        {activeTab === 'peers' && (
-          <PeerMap peers={telemetry?.peers} peerCount={telemetry?.peerCount || 0} />
-        )}
-
-        {/* Footer — RPC Methods Reference (honest claims) */}
+        {/* Footer — RPC Methods Reference */}
         <section className="mt-12 rounded-2xl border border-zcash-border bg-zcash-card p-6 text-xs text-zinc-400 shadow-xl">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-zcash-border pb-4 mb-4">
             <div>
               <h4 className="font-bold text-zinc-200 uppercase tracking-wider text-[11px]">
-                Zcash Mini Build Challenge &bull; RPC Methods Used
+                RPC Methods Used
               </h4>
               <p className="text-[11px] text-zinc-500 mt-0.5">
                 {dataSource === 'node'
-                  ? 'All data retrieved directly from your connected Zcash node via JSON-RPC 2.0.'
+                  ? 'Data retrieved directly from Zcash node via JSON-RPC 2.0.'
                   : dataSource === 'indexer'
-                  ? 'Dashboard data from Blockchair indexer. Connect a node for full RPC access.'
-                  : 'No data source connected. Configure a Zcash node to enable live data.'}
+                  ? 'Supplemented by Blockchair indexer. Connect a node for full RPC verification.'
+                  : 'No data source connected.'}
               </p>
             </div>
             <span className={`rounded px-2.5 py-1 text-[10px] font-bold border ${
-              dataSource === 'node'
-                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                : dataSource === 'indexer'
-                ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+              dataSource === 'node' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                : dataSource === 'indexer' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
                 : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
             }`}>
               {dataSource === 'node' ? 'Node Connected' : dataSource === 'indexer' ? 'Indexer Fallback' : 'Disconnected'}
             </span>
           </div>
-
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5 font-mono text-[11px]">
             {[
               { method: 'getblockchaininfo', desc: 'Height, Diff, Pools' },

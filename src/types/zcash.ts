@@ -94,6 +94,7 @@ export interface TelemetrySummary {
   subversion: string;
   latencyMs: number;
   updatedAt: string;
+  rpcProof?: Record<string, { success: boolean; latencyMs: number }>;
 }
 
 export interface RpcResponse<T = any> {

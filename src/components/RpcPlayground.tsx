@@ -121,7 +121,8 @@ export const RpcPlayground: React.FC<{ network?: 'mainnet' | 'testnet' }> = ({ n
 
   const generateCurl = () => {
     const params = paramsInput.trim() || '[]';
-    return `curl -X POST http://127.0.0.1:18232 \\\n  -H "Content-Type: application/json" \\\n  -d '{"jsonrpc":"2.0","id":"zecspectra","method":"${method}","params":${params}}'`;
+    const port = network === 'testnet' ? '18232' : '8232';
+    return `curl -X POST http://127.0.0.1:${port} \\\n  -H "Content-Type: application/json" \\\n  -d '{"jsonrpc":"2.0","id":"zecspectra","method":"${method}","params":${params}}'`;
   };
 
   return (
