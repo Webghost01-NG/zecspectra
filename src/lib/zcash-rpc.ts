@@ -126,7 +126,7 @@ async function callCloudGatewayRpc<T = any>(
       break;
 
     case 'getnetworksolps':
-      result = currentHashrate;
+      result = Number(currentHashrate) || 0;
       break;
 
     case 'getbestblockhash':

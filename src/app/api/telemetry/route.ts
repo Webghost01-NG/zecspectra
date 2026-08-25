@@ -66,8 +66,8 @@ export async function GET(req: NextRequest) {
     }
 
     // getnetworksolps
-    if (results[3].status === 'fulfilled' && typeof results[3].value.result === 'number') {
-      rpcSolps = results[3].value.result;
+    if (results[3].status === 'fulfilled' && (typeof results[3].value.result === 'number' || typeof results[3].value.result === 'string')) {
+      rpcSolps = Number(results[3].value.result) || 0;
       rpcProof.getnetworksolps = { success: true, latencyMs: results[3].value.durationMs || (Date.now() - t0) };
     } else {
       rpcProof.getnetworksolps = { success: false, latencyMs: Date.now() - t0, error: 'Failed' };
