@@ -67,7 +67,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Validate network
+    // Validate network strictly (must be 'mainnet' or 'testnet')
+    if (network !== undefined && network !== 'mainnet' && network !== 'testnet') {
+      return NextResponse.json(
+        { jsonrpc: '2.0', id: 'error', error: { code: -32602, message: 'Invalid network. Must be "mainnet" or "testnet".' } },
+        { status: 400 }
+      );
+    }
     const validatedNetwork = (network === 'testnet' ? 'testnet' : 'mainnet') as 'mainnet' | 'testnet';
 
     const result = await callZcashRpc(method, validatedParams, validatedNetwork);

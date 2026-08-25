@@ -14,7 +14,7 @@ A developer cockpit that connects to the Zcash network and displays live blockch
 Browser (Client UI) ──► Vercel API Routes (Route Handlers) ──► Zebra JSON-RPC 2.0 (zebrad)
 ```
 
-The browser communicates exclusively with server-side Next.js Route Handlers (`/api/telemetry`, `/api/block`, `/api/rpc`, `/api/tx-stream`). Server-side handlers enforce RPC allowlisting, authentication, and input validation before communicating directly with the Zebra node over JSON-RPC 2.0.
+The browser communicates exclusively with server-side Next.js Route Handlers (`/api/telemetry`, `/api/block`, `/api/rpc`, `/api/tx-stream`). Server-side handlers enforce strict read-only RPC allowlisting, IP rate-limiting, and input validation before communicating with the Zebra node over JSON-RPC 2.0. Upstream HTTP Basic Authentication is optionally supported via `ZCASH_RPC_USER` and `ZCASH_RPC_PASSWORD` when connecting to password-protected nodes.
 
 ## ✅ Challenge Requirements Met
 

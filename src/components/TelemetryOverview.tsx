@@ -147,7 +147,7 @@ export const TelemetryOverview: React.FC<TelemetryOverviewProps> = ({ telemetry,
           <div className="flex items-center gap-2 mb-3">
             <Activity className="h-4 w-4 text-emerald-400" />
             <span className="text-xs font-bold text-emerald-300 uppercase tracking-wider">RPC Connection Proof</span>
-            <span className="text-[10px] text-zinc-400 ml-auto">Source: Zebra/zcashd JSON-RPC 2.0</span>
+            <span className="text-[10px] text-zinc-400 ml-auto">Source: Zebra JSON-RPC 2.0</span>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {Object.entries(telemetry.rpcProof).map(([method, info]) => (

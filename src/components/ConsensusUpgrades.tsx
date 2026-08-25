@@ -17,21 +17,16 @@ const DEFAULT_UPGRADES: Record<string, NetworkUpgrade> = {
   'e9ff75a6': { name: 'Canopy', activationheight: 1046400, status: 'active' },
   'c2d6d0b4': { name: 'NU5', activationheight: 1687104, status: 'active' },
   'c8e71055': { name: 'NU6', activationheight: 2726400, status: 'active' },
-  '4e4a055d': { name: 'NU6.3', activationheight: 3428143, status: 'active' },
-  'ironwood': { name: 'Ironwood', activationheight: 0, status: 'pending' },
+  '37a5165b': { name: 'NU6.3 (Ironwood)', activationheight: 3428143, status: 'active' },
 };
 
 export const ConsensusUpgrades: React.FC<ConsensusUpgradesProps> = ({ upgrades = {}, currentHeight }) => {
   const safeUpgrades = upgrades && typeof upgrades === 'object' ? upgrades : {};
   const sourceUpgrades = Object.keys(safeUpgrades).length > 0 ? safeUpgrades : DEFAULT_UPGRADES;
 
-  // Ensure NU6.3 and Ironwood are included if missing from node data
   const displayUpgrades: Record<string, NetworkUpgrade> = { ...sourceUpgrades };
   if (!Object.values(displayUpgrades).some((u) => u.name?.toLowerCase().includes('nu6.3'))) {
-    displayUpgrades['4e4a055d'] = { name: 'NU6.3', activationheight: 3428143, status: currentHeight >= 3428143 ? 'active' : 'pending' };
-  }
-  if (!Object.values(displayUpgrades).some((u) => u.name?.toLowerCase().includes('ironwood'))) {
-    displayUpgrades['ironwood'] = { name: 'Ironwood', activationheight: 0, status: 'pending' };
+    displayUpgrades['37a5165b'] = { name: 'NU6.3 (Ironwood)', activationheight: 3428143, status: currentHeight >= 3428143 ? 'active' : 'pending' };
   }
 
   const upgradeList = Object.entries(displayUpgrades).map(([id, info]) => {
@@ -58,7 +53,7 @@ export const ConsensusUpgrades: React.FC<ConsensusUpgradesProps> = ({ upgrades =
             </span>
           </div>
           <p className="text-xs text-zinc-400 mt-1">
-            Tracking activation milestones across Zcash Network Upgrades (Overwinter, Sapling, Blossom, Heartwood, Canopy, NU5, NU6, NU6.3, Ironwood).
+            Tracking activation milestones across Zcash Network Upgrades (Overwinter, Sapling, Blossom, Heartwood, Canopy, NU5, NU6, and NU6.3/Ironwood).
           </p>
         </div>
       </div>

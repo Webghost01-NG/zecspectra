@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Shield, Lock, EyeOff, Sparkles, Box } from '@/components/Icons';
+import { Shield, ShieldCheck, Lock, EyeOff, Sparkles, Box } from '@/components/Icons';
 import { ValuePool } from '@/types/zcash';
 
 interface ShieldedPoolMeterProps {
@@ -26,7 +26,7 @@ export const ShieldedPoolMeter: React.FC<ShieldedPoolMeterProps> = ({ valuePools
       case 'sprout':
         return {
           name: 'Sprout Pool (Legacy ZK)',
-          desc: 'Original 2016 zk-SNARKs (Groth16/BCTV14)',
+          desc: 'Original 2016 zk-SNARKs (PHGR13/BCTV14)',
           icon: EyeOff,
           color: 'text-zinc-400',
           bgColor: 'bg-zinc-500/10',
@@ -62,6 +62,16 @@ export const ShieldedPoolMeter: React.FC<ShieldedPoolMeterProps> = ({ valuePools
           bgColor: 'bg-purple-500/10',
           borderColor: 'border-purple-500/30',
           barColor: 'bg-purple-400',
+        };
+      case 'ironwood':
+        return {
+          name: 'Ironwood Pool',
+          desc: 'NU6.3 next-generation shielded pool',
+          icon: ShieldCheck,
+          color: 'text-emerald-400',
+          bgColor: 'bg-emerald-500/10',
+          borderColor: 'border-emerald-500/30',
+          barColor: 'bg-emerald-500',
         };
       default:
         return {

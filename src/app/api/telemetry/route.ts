@@ -91,11 +91,17 @@ export async function GET(req: NextRequest) {
         const bcData = await bcRes.json();
         const stats = bcData.data;
         if (stats && stats.blocks) {
+          const exactHeight = typeof bcData.context?.state === 'number'
+            ? bcData.context.state
+            : (stats.blocks > 0 ? stats.blocks - 1 : stats.blocks);
           indexerData = {
-            height: stats.blocks, hash: stats.best_block_hash || '',
-            difficulty: stats.difficulty || 0, hashrate: stats.hashrate_24h || 0,
+            height: exactHeight,
+            hash: stats.best_block_hash || '',
+            difficulty: stats.difficulty || 0,
+            hashrate: stats.hashrate_24h || 0,
             mempoolTxs: stats.mempool_transactions || 0,
-            mempoolSize: stats.mempool_size || 0, nodes: stats.nodes || 0,
+            mempoolSize: stats.mempool_size || 0,
+            nodes: stats.nodes || 0,
           };
         }
       }
