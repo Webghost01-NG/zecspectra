@@ -8,21 +8,27 @@ A developer cockpit that connects to the Zcash network and displays live blockch
 
 **[https://zecspectra.vercel.app](https://zecspectra.vercel.app)**
 
-## 🏛️ Architecture
+## 🏛️ Dual-Mode Architecture
 
 ```
-Browser (Client UI) ──► Vercel API Routes (Route Handlers) ──► Zebra JSON-RPC 2.0 (zebrad)
+                                  ┌──► ⚡ Zcash Cloud RPC Gateway (24/7 Live Mainnet)
+Browser UI ──► Vercel API Routes ─┤
+                                  └──► 🖥️ Local Zebra Node (127.0.0.1:8232 via JSON-RPC 2.0)
 ```
 
-The browser communicates exclusively with server-side Next.js Route Handlers (`/api/telemetry`, `/api/block`, `/api/rpc`, `/api/tx-stream`). Server-side handlers enforce strict read-only RPC allowlisting, IP rate-limiting, and input validation before communicating with the Zebra node over JSON-RPC 2.0. Upstream HTTP Basic Authentication is optionally supported via `ZCASH_RPC_USER` and `ZCASH_RPC_PASSWORD` when connecting to password-protected nodes.
+ZecSpectra supports two seamless operational modes:
+1. **⚡ Cloud RPC Gateway (Default)**: Connects to a live 24/7 Zcash mainnet RPC gateway with zero setup. Ideal for judges, web visitors, and instant exploratory queries.
+2. **🖥️ Local Zebra Node**: For sovereign node operators and local developers running `zebrad` at `http://127.0.0.1:8232`.
+
+The browser communicates exclusively with server-side Next.js Route Handlers (`/api/telemetry`, `/api/block`, `/api/rpc`, `/api/tx-stream`). Server-side handlers enforce strict read-only RPC allowlisting, IP rate-limiting, and input validation before executing queries. Upstream HTTP Basic Authentication is supported via `ZCASH_RPC_USER` and `ZCASH_RPC_PASSWORD` when connecting to password-protected nodes.
 
 ## ✅ Challenge Requirements Met
 
 | Requirement | Status |
 | :--- | :--- |
-| Landing page | ✅ Polished responsive frontend |
-| Connect to a Zcash node | ✅ Configure via `.env` (Zebra NU6.3-capable release or remote) |
-| Use at least 3 RPC methods | ✅ Uses 6 RPC methods (see below) |
+| Landing page | ✅ Polished responsive frontend with mode switcher |
+| Connect to a Zcash node | ✅ 24/7 Cloud Gateway + Local Zebra node (`127.0.0.1:8232`) |
+| Use at least 3 RPC methods | ✅ Uses 6 standard JSON-RPC 2.0 methods (see below) |
 | Display live blockchain data | ✅ Block height, difficulty, mempool, peers, hashrate |
 
 ## 📡 RPC Methods Used

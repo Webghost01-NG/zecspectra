@@ -7,6 +7,7 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const query = searchParams.get('query');
   const network = (searchParams.get('network') === 'testnet' ? 'testnet' : 'mainnet') as 'mainnet' | 'testnet';
+  const nodeMode = (searchParams.get('nodeMode') === 'local' ? 'local' : 'gateway') as 'gateway' | 'local';
 
   if (!query) {
     return NextResponse.json({ error: 'Query parameter (block height or hash) is required' }, { status: 400 });
@@ -14,16 +15,16 @@ export async function GET(req: NextRequest) {
 
   const trimmedQuery = query.trim();
 
-  // === 1. Try direct Zcash node RPC ===
+  // === 1. Query Zcash RPC (Gateway or Local Node) ===
   try {
     let blockHash = trimmedQuery;
     if (/^\d+$/.test(trimmedQuery)) {
-      const hashRes = await callZcashRpc<string>('getblockhash', [parseInt(trimmedQuery, 10)], network);
+      const hashRes = await callZcashRpc<string>('getblockhash', [parseInt(trimmedQuery, 10)], network, nodeMode);
       if (hashRes.result) {
         blockHash = hashRes.result;
       }
     }
-    const blockRes = await callZcashRpc('getblock', [blockHash, 1], network);
+    const blockRes = await callZcashRpc('getblock', [blockHash, 1], network, nodeMode);
     if (blockRes.result && blockRes.result.hash) {
       return NextResponse.json({
         source: 'node',
@@ -32,7 +33,7 @@ export async function GET(req: NextRequest) {
       });
     }
   } catch (err) {
-    // Node not available, try indexer
+    // Node/gateway call failed
   }
 
   // === 2. Fallback: Blockchair indexer (mainnet only) ===
@@ -60,7 +61,7 @@ export async function GET(req: NextRequest) {
             height: b.id,
             size: b.size,
             version: b.version,
-            merkleroot: b.merkleroot || '',
+            merkleroot: b.merkle_root || b.merkleroot || '',
             tx: txs,
             time: Math.floor(new Date(b.time).getTime() / 1000),
             nonce: String(b.nonce || ''),
@@ -86,7 +87,7 @@ export async function GET(req: NextRequest) {
 
   // === 3. Not found ===
   return NextResponse.json(
-    { error: `Block "${trimmedQuery}" not found. Ensure a Zcash node is connected or the block exists on mainnet.` },
+    { error: `Block "${trimmedQuery}" not found. Ensure the block exists on the Zcash network.` },
     { status: 404 }
   );
 }

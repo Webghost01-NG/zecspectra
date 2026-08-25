@@ -3,9 +3,9 @@ import { callZcashRpc, RPC_ALLOWLIST } from '@/lib/zcash-rpc';
 
 export const dynamic = 'force-dynamic';
 
-// Simple in-memory rate limiter (per-IP, 30 req/min)
+// Simple in-memory rate limiter (per-IP, 45 req/min)
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-const RATE_LIMIT = 30;
+const RATE_LIMIT = 45;
 const RATE_WINDOW_MS = 60_000;
 
 function checkRateLimit(ip: string): boolean {
@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { method, params, network } = body;
+    const { method, params, network, nodeMode } = body;
 
     // Validate method
     if (!method || typeof method !== 'string') {
@@ -75,11 +75,11 @@ export async function POST(req: NextRequest) {
       );
     }
     const validatedNetwork = (network === 'testnet' ? 'testnet' : 'mainnet') as 'mainnet' | 'testnet';
+    const validatedMode = (nodeMode === 'local' ? 'local' : 'gateway') as 'gateway' | 'local';
 
-    const result = await callZcashRpc(method, validatedParams, validatedNetwork);
+    const result = await callZcashRpc(method, validatedParams, validatedNetwork, validatedMode);
     return NextResponse.json(result);
   } catch (err: any) {
-    // Sanitize error — NEVER expose internal URLs
     console.error('[RPC Route Error]', err.message);
     return NextResponse.json(
       {
@@ -87,7 +87,7 @@ export async function POST(req: NextRequest) {
         id: 'error',
         error: {
           code: -32603,
-          message: 'Zcash node is not reachable. Ensure a node is configured and accessible.',
+          message: err.message || 'Zcash node/gateway is not reachable.',
         },
       },
       { status: 502 }

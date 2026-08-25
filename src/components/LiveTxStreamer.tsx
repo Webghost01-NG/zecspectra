@@ -13,9 +13,10 @@ interface ConfirmedTxItem {
 
 interface LiveTxStreamerProps {
   network?: 'mainnet' | 'testnet';
+  nodeMode?: 'gateway' | 'local';
 }
 
-export const LiveTxStreamer: React.FC<LiveTxStreamerProps> = ({ network = 'mainnet' }) => {
+export const LiveTxStreamer: React.FC<LiveTxStreamerProps> = ({ network = 'mainnet', nodeMode = 'gateway' }) => {
   const [isListening, setIsListening] = useState<boolean>(true);
   const [transactions, setTransactions] = useState<ConfirmedTxItem[]>([]);
   const [blockHeight, setBlockHeight] = useState<number>(0);
@@ -27,7 +28,7 @@ export const LiveTxStreamer: React.FC<LiveTxStreamerProps> = ({ network = 'mainn
 
   const fetchConfirmedStream = useCallback(async () => {
     try {
-      const res = await fetch(`/api/tx-stream?network=${network}`);
+      const res = await fetch(`/api/tx-stream?network=${network}&nodeMode=${nodeMode}`);
       if (res.ok) {
         const data = await res.json();
         setDataSource(data.source || 'unknown');
@@ -45,7 +46,7 @@ export const LiveTxStreamer: React.FC<LiveTxStreamerProps> = ({ network = 'mainn
     } catch (e) {
       setError('Failed to reach transaction stream endpoint.');
     }
-  }, [network]);
+  }, [network, nodeMode]);
 
   useEffect(() => {
     fetchConfirmedStream();

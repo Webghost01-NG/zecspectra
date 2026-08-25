@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { Shield, Radio, Activity, Terminal, Layers, Users, RefreshCw, Zap, Cpu } from '@/components/Icons';
+import { Shield, Radio, Activity, Terminal, Layers, RefreshCw, Zap, Cpu, Server } from '@/components/Icons';
 import { TelemetrySummary } from '@/types/zcash';
 
 interface NavbarProps {
@@ -14,6 +14,8 @@ interface NavbarProps {
   setAutoRefresh: (val: boolean) => void;
   network: 'mainnet' | 'testnet';
   setNetwork: (net: 'mainnet' | 'testnet') => void;
+  nodeMode: 'gateway' | 'local';
+  setNodeMode: (mode: 'gateway' | 'local') => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -26,6 +28,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   setAutoRefresh,
   network,
   setNetwork,
+  nodeMode,
+  setNodeMode,
 }) => {
   const isConnected = telemetry?.nodeConnected;
   const dataSource = telemetry?.dataSource || 'none';
@@ -35,7 +39,7 @@ export const Navbar: React.FC<NavbarProps> = ({
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between gap-2">
           
-          {/* Logo */}
+          {/* Logo & Node Mode Switcher */}
           <div className="flex items-center gap-2 shrink-0">
             <div className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-zcash-gold/10 border border-zcash-gold/30 shadow-[0_0_15px_rgba(244,183,40,0.2)]">
               <Shield className="h-4.5 w-4.5 text-zcash-gold" />
@@ -45,6 +49,36 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <span className="text-lg font-extrabold tracking-tight text-white">
                   Zec<span className="text-zcash-gold">Spectra</span>
                 </span>
+
+                {/* Connection Mode Toggle: Gateway vs Local Node */}
+                <div className="flex items-center rounded-full bg-zcash-navy border border-zcash-border p-0.5 text-[10px] font-bold">
+                  <button
+                    onClick={() => setNodeMode('gateway')}
+                    title="24/7 Live Cloud RPC Gateway for instant zero-config testing"
+                    className={`flex items-center gap-1 px-2 py-0.5 rounded-full transition-all ${
+                      nodeMode === 'gateway'
+                        ? 'bg-emerald-500 text-zinc-950 font-black shadow'
+                        : 'text-zinc-400 hover:text-white'
+                    }`}
+                  >
+                    <Zap className="h-2.5 w-2.5" />
+                    <span>Gateway</span>
+                  </button>
+                  <button
+                    onClick={() => setNodeMode('local')}
+                    title="Connect to a local Zebra node running at http://127.0.0.1:8232"
+                    className={`flex items-center gap-1 px-2 py-0.5 rounded-full transition-all ${
+                      nodeMode === 'local'
+                        ? 'bg-amber-500 text-zinc-950 font-black shadow'
+                        : 'text-zinc-400 hover:text-white'
+                    }`}
+                  >
+                    <Server className="h-2.5 w-2.5" />
+                    <span>Local Zebra</span>
+                  </button>
+                </div>
+
+                {/* Mainnet vs Testnet Toggle */}
                 <div className="flex items-center rounded-full bg-zcash-navy border border-zcash-border p-0.5 text-[10px] font-bold">
                   <button
                     onClick={() => setNetwork('mainnet')}
@@ -54,7 +88,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                         : 'text-zinc-400 hover:text-white'
                     }`}
                   >
-                    MAINNET
+                    MAIN
                   </button>
                   <button
                     onClick={() => setNetwork('testnet')}
@@ -64,11 +98,11 @@ export const Navbar: React.FC<NavbarProps> = ({
                         : 'text-zinc-400 hover:text-white'
                     }`}
                   >
-                    TESTNET
+                    TEST
                   </button>
                 </div>
               </div>
-              <p className="text-[10px] text-zinc-500">Zcash Protocol Telemetry</p>
+              <p className="text-[10px] text-zinc-500">Zcash Protocol Telemetry & RPC Studio</p>
             </div>
           </div>
 
@@ -100,7 +134,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={() => setAutoRefresh(!autoRefresh)}
-              title="Toggle 5s Auto-refresh"
+              title="Toggle 15s Auto-refresh"
               className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg border text-[11px] font-medium transition-all ${
                 autoRefresh
                   ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-400'
@@ -124,19 +158,15 @@ export const Navbar: React.FC<NavbarProps> = ({
             <div className="flex items-center gap-2 rounded-xl border border-zcash-border bg-zcash-navy px-3 py-1.5">
               <div className="relative flex h-2 w-2">
                 <span className={`absolute inline-flex h-full w-full rounded-full opacity-75 ${
-                  dataSource === 'node' ? 'animate-ping bg-emerald-400'
-                    : dataSource === 'indexer' ? 'bg-amber-400'
-                    : 'bg-rose-400'
+                  isConnected ? 'animate-ping bg-emerald-400' : 'bg-rose-400'
                 }`} />
                 <span className={`relative inline-flex h-2 w-2 rounded-full ${
-                  dataSource === 'node' ? 'bg-emerald-500'
-                    : dataSource === 'indexer' ? 'bg-amber-500'
-                    : 'bg-rose-500'
+                  isConnected ? 'bg-emerald-500' : 'bg-rose-500'
                 }`} />
               </div>
               <span className="text-[10px] font-bold text-zinc-200 leading-none">
-                {dataSource === 'node' ? `${network.toUpperCase()} Node`
-                  : dataSource === 'indexer' ? 'Indexer'
+                {isConnected
+                  ? (nodeMode === 'gateway' ? 'Cloud Gateway' : 'Local Zebra')
                   : 'Disconnected'}
               </span>
             </div>
@@ -164,16 +194,15 @@ export const Navbar: React.FC<NavbarProps> = ({
               </button>
             ))}
           </div>
-          {/* Mobile network switch */}
-          <div className="flex items-center rounded-full bg-zcash-navy border border-zcash-border p-0.5 text-[9px] sm:text-[10px] font-bold shrink-0">
+
+          {/* Mobile mode switch */}
+          <div className="flex items-center rounded-full bg-zcash-navy border border-zcash-border p-0.5 text-[9px] font-bold shrink-0">
             <button
-              onClick={() => setNetwork('mainnet')}
-              className={`px-1.5 py-0.5 rounded-full ${network === 'mainnet' ? 'bg-zcash-gold text-zcash-dark' : 'text-zinc-400'}`}
-            >MAIN</button>
-            <button
-              onClick={() => setNetwork('testnet')}
-              className={`px-1.5 py-0.5 rounded-full ${network === 'testnet' ? 'bg-zcash-gold text-zcash-dark' : 'text-zinc-400'}`}
-            >TEST</button>
+              onClick={() => setNodeMode(nodeMode === 'gateway' ? 'local' : 'gateway')}
+              className="px-1.5 py-0.5 rounded-full bg-zcash-gold text-zcash-dark"
+            >
+              {nodeMode === 'gateway' ? 'GATEWAY' : 'LOCAL'}
+            </button>
           </div>
         </div>
       </div>

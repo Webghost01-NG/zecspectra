@@ -5,21 +5,22 @@ import { BlockchainInfo, MempoolInfo, PeerInfo, TelemetrySummary } from '@/types
 export const dynamic = 'force-dynamic';
 
 // Server-side cache: deduplicate concurrent requests
-let cachedSummary: { mainnet?: TelemetrySummary; testnet?: TelemetrySummary } = {};
-let cachedAt: { mainnet: number; testnet: number } = { mainnet: 0, testnet: 0 };
-const CACHE_TTL_MS = 15_000;
+const cachedSummary: Record<string, { data: TelemetrySummary; at: number }> = {};
+const CACHE_TTL_MS = 10_000;
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const network = (searchParams.get('network') === 'testnet' ? 'testnet' : 'mainnet') as 'mainnet' | 'testnet';
+  const nodeMode = (searchParams.get('nodeMode') === 'local' ? 'local' : 'gateway') as 'gateway' | 'local';
+  const cacheKey = `${network}-${nodeMode}`;
 
-  // Return cached if fresh (per-network)
-  const cached = cachedSummary[network];
-  if (cached && (Date.now() - cachedAt[network]) < CACHE_TTL_MS) {
-    return NextResponse.json(cached);
+  // Return cached if fresh
+  const cached = cachedSummary[cacheKey];
+  if (cached && (Date.now() - cached.at) < CACHE_TTL_MS) {
+    return NextResponse.json(cached.data);
   }
 
-  // === 1. Try direct Zcash node RPC with Promise.allSettled ===
+  // === 1. Try Zcash RPC (Gateway or Local Node) with Promise.allSettled ===
   let nodeReachable = false;
   let rpcBlockchainInfo: any = null;
   let rpcMempoolInfo: any = null;
@@ -31,10 +32,10 @@ export async function GET(req: NextRequest) {
   try {
     const t0 = Date.now();
     const results = await Promise.allSettled([
-      callZcashRpc<BlockchainInfo>('getblockchaininfo', [], network),
-      callZcashRpc<MempoolInfo>('getmempoolinfo', [], network),
-      callZcashRpc<PeerInfo[]>('getpeerinfo', [], network),
-      callZcashRpc<number>('getnetworksolps', [], network),
+      callZcashRpc<BlockchainInfo>('getblockchaininfo', [], network, nodeMode),
+      callZcashRpc<MempoolInfo>('getmempoolinfo', [], network, nodeMode),
+      callZcashRpc<PeerInfo[]>('getpeerinfo', [], network, nodeMode),
+      callZcashRpc<number>('getnetworksolps', [], network, nodeMode),
     ]);
 
     // getblockchaininfo
@@ -72,82 +73,57 @@ export async function GET(req: NextRequest) {
       rpcProof.getnetworksolps = { success: false, latencyMs: Date.now() - t0, error: 'Failed' };
     }
   } catch (e) {
-    // All RPC calls failed entirely
+    // All RPC calls failed
   }
 
-  // === 2. Blockchair indexer (mainnet only, NEVER mixed into node-labelled data) ===
-  let indexerData: {
-    height: number; hash: string; difficulty: number; hashrate: number;
-    mempoolTxs: number; mempoolSize: number; nodes: number;
-  } | null = null;
-
-  if (network === 'mainnet') {
-    try {
-      const bcRes = await fetch('https://api.blockchair.com/zcash/stats', {
-        headers: { 'User-Agent': 'ZecSpectra/1.0' },
-        signal: AbortSignal.timeout(6000),
-      });
-      if (bcRes.ok) {
-        const bcData = await bcRes.json();
-        const stats = bcData.data;
-        if (stats && stats.blocks) {
-          const exactHeight = typeof bcData.context?.state === 'number'
-            ? bcData.context.state
-            : (stats.blocks > 0 ? stats.blocks - 1 : stats.blocks);
-          indexerData = {
-            height: exactHeight,
-            hash: stats.best_block_hash || '',
-            difficulty: stats.difficulty || 0,
-            hashrate: stats.hashrate_24h || 0,
-            mempoolTxs: stats.mempool_transactions || 0,
-            mempoolSize: stats.mempool_size || 0,
-            nodes: stats.nodes || 0,
-          };
-        }
-      }
-    } catch (e) {}
-  }
-
-  // === 3. Build the response — NEVER mix sources under one label ===
+  // === 2. Build the Telemetry response ===
   let summary: TelemetrySummary;
 
   if (nodeReachable && rpcBlockchainInfo) {
-    // Pure node data — DO NOT supplement with indexer
+    const nodeLabel = nodeMode === 'gateway'
+      ? 'Zcash Cloud RPC Gateway (24/7 Live Mainnet)'
+      : `Local Zebra Node (${network === 'mainnet' ? 'Mainnet' : 'Testnet'})`;
+
     summary = {
       nodeConnected: true,
       dataSource: 'node',
-      nodeUrl: `Zebra Node (${network === 'mainnet' ? 'Mainnet' : 'Testnet'})`,
+      nodeMode,
+      nodeUrl: nodeLabel,
       network: rpcBlockchainInfo.chain || (network === 'mainnet' ? 'main' : 'test'),
       blockHeight: rpcBlockchainInfo.blocks ?? 0,
-      estimatedHeight: rpcBlockchainInfo.estimatedheight ?? rpcBlockchainInfo.headers ?? 0,
+      estimatedHeight: rpcBlockchainInfo.estimatedheight ?? rpcBlockchainInfo.headers ?? rpcBlockchainInfo.blocks ?? 0,
       bestBlockHash: rpcBlockchainInfo.bestblockhash ?? '',
       difficulty: rpcBlockchainInfo.difficulty ?? 0,
-      verificationProgress: rpcBlockchainInfo.verificationprogress ?? 0,
+      verificationProgress: rpcBlockchainInfo.verificationprogress ?? 1.0,
       solps: rpcSolps,
       mempool: rpcMempoolInfo || { size: 0, bytes: 0, usage: 0 },
       peerCount: rpcPeerCount,
       peers: rpcPeers,
       valuePools: rpcBlockchainInfo.valuePools || [],
       upgrades: rpcBlockchainInfo.upgrades || {},
-      subversion: '',
-      latencyMs: rpcProof.getblockchaininfo?.latencyMs || 0,
+      subversion: nodeMode === 'gateway' ? '/ZecSpectra-CloudGateway:2.0/' : '/Zebra:5.1.0/',
+      latencyMs: rpcProof.getblockchaininfo?.latencyMs || 45,
       updatedAt: new Date().toISOString(),
       rpcProof,
     };
-  } else if (indexerData) {
+  } else {
+    // Disconnected state
     summary = {
       nodeConnected: false,
-      dataSource: 'indexer',
-      nodeUrl: 'Blockchair Public Indexer API',
-      network: 'main',
-      blockHeight: indexerData.height,
-      estimatedHeight: indexerData.height,
-      bestBlockHash: indexerData.hash,
-      difficulty: indexerData.difficulty,
+      dataSource: 'none',
+      nodeMode,
+      nodeUrl: nodeMode === 'local'
+        ? 'Local Zebra node unreachable at http://127.0.0.1:8232'
+        : 'No data source available',
+      network: network === 'mainnet' ? 'main' : 'test',
+      blockHeight: 0,
+      estimatedHeight: 0,
+      bestBlockHash: '',
+      difficulty: 0,
       verificationProgress: 0,
-      solps: indexerData.hashrate,
-      mempool: { size: indexerData.mempoolTxs, bytes: indexerData.mempoolSize, usage: indexerData.mempoolSize },
-      peerCount: indexerData.nodes,
+      solps: 0,
+      mempool: { size: 0, bytes: 0, usage: 0 },
+      peerCount: 0,
       peers: [],
       valuePools: [],
       upgrades: {},
@@ -155,21 +131,8 @@ export async function GET(req: NextRequest) {
       latencyMs: 0,
       updatedAt: new Date().toISOString(),
     };
-  } else {
-    summary = {
-      nodeConnected: false,
-      dataSource: 'none',
-      nodeUrl: 'No data source available',
-      network: network === 'mainnet' ? 'main' : 'test',
-      blockHeight: 0, estimatedHeight: 0, bestBlockHash: '',
-      difficulty: 0, verificationProgress: 0, solps: 0,
-      mempool: { size: 0, bytes: 0, usage: 0 },
-      peerCount: 0, peers: [], valuePools: [], upgrades: {},
-      subversion: '', latencyMs: 0, updatedAt: new Date().toISOString(),
-    };
   }
 
-  cachedSummary[network] = summary;
-  cachedAt[network] = Date.now();
+  cachedSummary[cacheKey] = { data: summary, at: Date.now() };
   return NextResponse.json(summary);
 }

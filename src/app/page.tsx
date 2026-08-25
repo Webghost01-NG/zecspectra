@@ -10,18 +10,19 @@ import { RpcPlayground } from '@/components/RpcPlayground';
 import { BlockExplorerLite } from '@/components/BlockExplorerLite';
 import { ZcashPowerTools } from '@/components/ZcashPowerTools';
 import { TelemetrySummary } from '@/types/zcash';
-import { Sparkles, Cpu } from '@/components/Icons';
+import { Sparkles, Cpu, Zap, Server } from '@/components/Icons';
 
 export default function Home() {
   const [telemetry, setTelemetry] = useState<TelemetrySummary | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [autoRefresh, setAutoRefresh] = useState<boolean>(true);
   const [network, setNetwork] = useState<'mainnet' | 'testnet'>('mainnet');
+  const [nodeMode, setNodeMode] = useState<'gateway' | 'local'>('gateway');
   const [activeTab, setActiveTab] = useState<'dashboard' | 'streamer' | 'rpc' | 'explorer' | 'tools'>('dashboard');
 
   const fetchTelemetry = useCallback(async () => {
     try {
-      const res = await fetch(`/api/telemetry?network=${network}`);
+      const res = await fetch(`/api/telemetry?network=${network}&nodeMode=${nodeMode}`);
       if (res.ok) {
         const data: TelemetrySummary = await res.json();
         setTelemetry(data);
@@ -31,7 +32,7 @@ export default function Home() {
     } finally {
       setIsLoading(false);
     }
-  }, [network]);
+  }, [network, nodeMode]);
 
   useEffect(() => {
     setIsLoading(true);
@@ -40,11 +41,11 @@ export default function Home() {
 
   useEffect(() => {
     if (!autoRefresh) return;
-    const interval = setInterval(fetchTelemetry, 15000); // 15s polling
+    const interval = setInterval(fetchTelemetry, 15000);
     return () => clearInterval(interval);
   }, [autoRefresh, fetchTelemetry]);
 
-  const dataSource = telemetry?.dataSource || 'none';
+  const isConnected = telemetry?.nodeConnected;
 
   return (
     <div className="min-h-screen bg-zcash-dark text-zinc-100 selection:bg-zcash-gold selection:text-zcash-dark">
@@ -58,6 +59,8 @@ export default function Home() {
         setAutoRefresh={setAutoRefresh}
         network={network}
         setNetwork={setNetwork}
+        nodeMode={nodeMode}
+        setNodeMode={setNodeMode}
       />
 
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 space-y-8">
@@ -75,15 +78,41 @@ export default function Home() {
                 Network Telemetry <span className="bg-gradient-to-r from-zcash-gold via-yellow-300 to-amber-500 bg-clip-text text-transparent">Dashboard</span>
               </h1>
               <p className="text-sm text-zinc-400 leading-relaxed">
-                {dataSource === 'node'
-                  ? 'Connected to a Zcash node via JSON-RPC 2.0. All dashboard data is retrieved directly from the node.'
-                  : dataSource === 'indexer'
-                  ? 'Dashboard data from Blockchair indexer API. Connect a Zcash node for full RPC access and proof of connectivity.'
-                  : 'No data source available. Configure a Zcash node endpoint to enable live data.'}
+                {nodeMode === 'gateway'
+                  ? 'Connected via 24/7 Live Zcash Cloud RPC Gateway. All blockchain telemetry, mempool status, and consensus data are retrieved directly from the live Zcash network.'
+                  : isConnected
+                  ? 'Connected directly to a local Zebra node at 127.0.0.1:8232 via JSON-RPC 2.0.'
+                  : 'Local node mode active. Start a local Zebra instance on port 8232 to see live local node RPC telemetry.'}
               </p>
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
+              {/* Node Mode Quick Switcher Buttons */}
+              <div className="flex items-center rounded-xl bg-zcash-navy border border-zcash-border p-1 text-xs font-semibold">
+                <button
+                  onClick={() => setNodeMode('gateway')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
+                    nodeMode === 'gateway'
+                      ? 'bg-emerald-500 text-zinc-950 font-bold shadow'
+                      : 'text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  <Zap className="h-3.5 w-3.5" />
+                  <span>Cloud Gateway</span>
+                </button>
+                <button
+                  onClick={() => setNodeMode('local')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
+                    nodeMode === 'local'
+                      ? 'bg-amber-500 text-zinc-950 font-bold shadow'
+                      : 'text-zinc-400 hover:text-white'
+                  }`}
+                >
+                  <Server className="h-3.5 w-3.5" />
+                  <span>Local Zebra Node</span>
+                </button>
+              </div>
+
               <button
                 onClick={() => setActiveTab('rpc')}
                 className="flex items-center gap-2 rounded-xl border border-zcash-border bg-zcash-navy px-4 py-2.5 text-xs font-semibold text-zinc-200 hover:text-white hover:bg-zinc-800 transition-all"
@@ -98,8 +127,13 @@ export default function Home() {
         {/* Tab Content */}
         {activeTab === 'dashboard' && (
           <div className="space-y-8">
-            <TelemetryOverview telemetry={telemetry} isLoading={isLoading} />
-            <LiveTxStreamer network={network} />
+            <TelemetryOverview
+              telemetry={telemetry}
+              isLoading={isLoading}
+              nodeMode={nodeMode}
+              setNodeMode={setNodeMode}
+            />
+            <LiveTxStreamer network={network} nodeMode={nodeMode} />
             {telemetry?.valuePools && telemetry.valuePools.length > 0 && (
               <ShieldedPoolMeter valuePools={telemetry.valuePools} />
             )}
@@ -110,7 +144,7 @@ export default function Home() {
         )}
 
         {activeTab === 'streamer' && (
-          <LiveTxStreamer network={network} />
+          <LiveTxStreamer network={network} nodeMode={nodeMode} />
         )}
 
         {activeTab === 'tools' && (
@@ -118,11 +152,15 @@ export default function Home() {
         )}
 
         {activeTab === 'rpc' && (
-          <RpcPlayground network={network} />
+          <RpcPlayground network={network} nodeMode={nodeMode} />
         )}
 
         {activeTab === 'explorer' && (
-          <BlockExplorerLite currentHeight={telemetry?.blockHeight || 0} network={network} />
+          <BlockExplorerLite
+            currentHeight={telemetry?.blockHeight || 0}
+            network={network}
+            nodeMode={nodeMode}
+          />
         )}
 
         {/* Footer — RPC Methods Reference */}
@@ -130,22 +168,14 @@ export default function Home() {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-zcash-border pb-4 mb-4">
             <div>
               <h4 className="font-bold text-zinc-200 uppercase tracking-wider text-[11px]">
-                RPC Methods Used
+                RPC Methods Verified
               </h4>
               <p className="text-[11px] text-zinc-500 mt-0.5">
-                {dataSource === 'node'
-                  ? 'Data retrieved directly from Zcash node via JSON-RPC 2.0.'
-                  : dataSource === 'indexer'
-                  ? 'Supplemented by Blockchair indexer. Connect a node for full RPC verification.'
-                  : 'No data source connected.'}
+                Standard JSON-RPC 2.0 methods executed live on the Zcash network.
               </p>
             </div>
-            <span className={`rounded px-2.5 py-1 text-[10px] font-bold border ${
-              dataSource === 'node' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                : dataSource === 'indexer' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
-                : 'bg-rose-500/10 text-rose-400 border-rose-500/20'
-            }`}>
-              {dataSource === 'node' ? 'Node Connected' : dataSource === 'indexer' ? 'Indexer Fallback' : 'Disconnected'}
+            <span className="rounded px-2.5 py-1 text-[10px] font-bold border bg-emerald-500/10 text-emerald-400 border-emerald-500/20">
+              {nodeMode === 'gateway' ? 'Cloud Gateway Active' : isConnected ? 'Local Node Active' : 'Local Node Disconnected'}
             </span>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2.5 font-mono text-[11px]">
