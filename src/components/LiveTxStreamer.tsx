@@ -13,7 +13,7 @@ interface ConfirmedTxItem {
 
 interface LiveTxStreamerProps {
   network?: 'mainnet' | 'testnet';
-  nodeMode?: 'gateway' | 'local';
+  nodeMode?: 'gateway' | 'local' | 'custom';
 }
 
 export const LiveTxStreamer: React.FC<LiveTxStreamerProps> = ({ network = 'mainnet', nodeMode = 'gateway' }) => {

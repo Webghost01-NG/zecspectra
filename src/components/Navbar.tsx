@@ -1,8 +1,9 @@
 'use client';
 
 import React from 'react';
-import { Shield, Radio, Activity, Terminal, Layers, RefreshCw, Zap, Cpu, Server } from '@/components/Icons';
+import { Shield, Radio, Activity, Terminal, Layers, RefreshCw, Zap, Cpu, Server, Globe } from '@/components/Icons';
 import { TelemetrySummary } from '@/types/zcash';
+import { NodeConfig } from '@/components/NodeSwitcherModal';
 
 interface NavbarProps {
   telemetry: TelemetrySummary | null;
@@ -14,8 +15,8 @@ interface NavbarProps {
   setAutoRefresh: (val: boolean) => void;
   network: 'mainnet' | 'testnet';
   setNetwork: (net: 'mainnet' | 'testnet') => void;
-  nodeMode: 'gateway' | 'local';
-  setNodeMode: (mode: 'gateway' | 'local') => void;
+  nodeConfig: NodeConfig;
+  onOpenNodeSwitcher: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -28,58 +29,51 @@ export const Navbar: React.FC<NavbarProps> = ({
   setAutoRefresh,
   network,
   setNetwork,
-  nodeMode,
-  setNodeMode,
+  nodeConfig,
+  onOpenNodeSwitcher,
 }) => {
   const isConnected = telemetry?.nodeConnected;
-  const dataSource = telemetry?.dataSource || 'none';
+  const getNodeModeLabel = () => {
+    if (nodeConfig.mode === 'gateway') return 'Cloud Gateway';
+    if (nodeConfig.mode === 'local') return `Local (${nodeConfig.localPort || '8232'})`;
+    return 'Remote RPC';
+  };
 
   return (
-    <header className="sticky top-0 z-50 border-b border-zcash-border/80 bg-zcash-dark/90 backdrop-blur-xl">
+    <header className="sticky top-0 z-40 border-b border-zcash-border/80 bg-zcash-dark/90 backdrop-blur-xl">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between gap-2">
           
-          {/* Logo & Node Mode Switcher */}
-          <div className="flex items-center gap-2 shrink-0">
+          {/* Logo & Node Switcher Button */}
+          <div className="flex items-center gap-2.5 shrink-0">
             <div className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-zcash-gold/10 border border-zcash-gold/30 shadow-[0_0_15px_rgba(244,183,40,0.2)]">
               <Shield className="h-4.5 w-4.5 text-zcash-gold" />
             </div>
-            <div className="hidden sm:block">
+            <div>
               <div className="flex items-center gap-2">
                 <span className="text-lg font-extrabold tracking-tight text-white">
                   Zec<span className="text-zcash-gold">Spectra</span>
                 </span>
 
-                {/* Connection Mode Toggle: Gateway vs Local Node */}
-                <div className="flex items-center rounded-full bg-zcash-navy border border-zcash-border p-0.5 text-[10px] font-bold">
-                  <button
-                    onClick={() => setNodeMode('gateway')}
-                    title="24/7 Live Cloud RPC Gateway for instant zero-config testing"
-                    className={`flex items-center gap-1 px-2 py-0.5 rounded-full transition-all ${
-                      nodeMode === 'gateway'
-                        ? 'bg-emerald-500 text-zinc-950 font-black shadow'
-                        : 'text-zinc-400 hover:text-white'
-                    }`}
-                  >
-                    <Zap className="h-2.5 w-2.5" />
-                    <span>Gateway</span>
-                  </button>
-                  <button
-                    onClick={() => setNodeMode('local')}
-                    title="Connect to a local Zebra node running at http://127.0.0.1:8232"
-                    className={`flex items-center gap-1 px-2 py-0.5 rounded-full transition-all ${
-                      nodeMode === 'local'
-                        ? 'bg-amber-500 text-zinc-950 font-black shadow'
-                        : 'text-zinc-400 hover:text-white'
-                    }`}
-                  >
-                    <Server className="h-2.5 w-2.5" />
-                    <span>Local Zebra</span>
-                  </button>
-                </div>
+                {/* Node Switcher Button */}
+                <button
+                  onClick={onOpenNodeSwitcher}
+                  title="Switch connection between Cloud Gateway, Local Node (any port), or Remote RPC"
+                  className="flex items-center gap-1.5 rounded-full bg-zcash-navy border border-zcash-border/80 px-2.5 py-1 text-[10px] font-bold text-zinc-300 hover:border-zcash-gold/50 hover:text-white transition-all shadow-sm"
+                >
+                  {nodeConfig.mode === 'gateway' ? (
+                    <Zap className="h-3 w-3 text-emerald-400" />
+                  ) : nodeConfig.mode === 'local' ? (
+                    <Server className="h-3 w-3 text-zcash-gold" />
+                  ) : (
+                    <Globe className="h-3 w-3 text-blue-400" />
+                  )}
+                  <span>{getNodeModeLabel()}</span>
+                  <span className="text-[9px] text-zinc-500 font-normal">⚙️</span>
+                </button>
 
                 {/* Mainnet vs Testnet Toggle */}
-                <div className="flex items-center rounded-full bg-zcash-navy border border-zcash-border p-0.5 text-[10px] font-bold">
+                <div className="hidden sm:flex items-center rounded-full bg-zcash-navy border border-zcash-border p-0.5 text-[10px] font-bold">
                   <button
                     onClick={() => setNetwork('mainnet')}
                     className={`px-2 py-0.5 rounded-full transition-all ${
@@ -102,7 +96,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   </button>
                 </div>
               </div>
-              <p className="text-[10px] text-zinc-500">Zcash Protocol Telemetry & RPC Studio</p>
+              <p className="text-[10px] text-zinc-500 hidden sm:block">Zcash Protocol Telemetry & RPC Studio</p>
             </div>
           </div>
 
@@ -154,8 +148,12 @@ export const Navbar: React.FC<NavbarProps> = ({
               <RefreshCw className={`h-3.5 w-3.5 ${isLoading ? 'animate-spin text-zcash-gold' : ''}`} />
             </button>
 
-            {/* Status Pill */}
-            <div className="flex items-center gap-2 rounded-xl border border-zcash-border bg-zcash-navy px-3 py-1.5">
+            {/* Status Pill — Clickable to switch node */}
+            <button
+              onClick={onOpenNodeSwitcher}
+              title="Click to change node settings"
+              className="flex items-center gap-2 rounded-xl border border-zcash-border bg-zcash-navy px-3 py-1.5 hover:border-zcash-gold/40 transition-all"
+            >
               <div className="relative flex h-2 w-2">
                 <span className={`absolute inline-flex h-full w-full rounded-full opacity-75 ${
                   isConnected ? 'animate-ping bg-emerald-400' : 'bg-rose-400'
@@ -165,11 +163,9 @@ export const Navbar: React.FC<NavbarProps> = ({
                 }`} />
               </div>
               <span className="text-[10px] font-bold text-zinc-200 leading-none">
-                {isConnected
-                  ? (nodeMode === 'gateway' ? 'Cloud Gateway' : 'Local Zebra')
-                  : 'Disconnected'}
+                {isConnected ? 'Node Online' : 'Disconnected'}
               </span>
-            </div>
+            </button>
           </div>
         </div>
 
@@ -195,13 +191,13 @@ export const Navbar: React.FC<NavbarProps> = ({
             ))}
           </div>
 
-          {/* Mobile mode switch */}
+          {/* Mobile network switch */}
           <div className="flex items-center rounded-full bg-zcash-navy border border-zcash-border p-0.5 text-[9px] font-bold shrink-0">
             <button
-              onClick={() => setNodeMode(nodeMode === 'gateway' ? 'local' : 'gateway')}
+              onClick={() => setNetwork(network === 'mainnet' ? 'testnet' : 'mainnet')}
               className="px-1.5 py-0.5 rounded-full bg-zcash-gold text-zcash-dark"
             >
-              {nodeMode === 'gateway' ? 'GATEWAY' : 'LOCAL'}
+              {network.toUpperCase()}
             </button>
           </div>
         </div>

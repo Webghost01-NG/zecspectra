@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { callZcashRpc } from '@/lib/zcash-rpc';
+import { callZcashRpc, CustomRpcConfig } from '@/lib/zcash-rpc';
 
 export const dynamic = 'force-dynamic';
 
@@ -7,7 +7,8 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const query = searchParams.get('query');
   const network = (searchParams.get('network') === 'testnet' ? 'testnet' : 'mainnet') as 'mainnet' | 'testnet';
-  const nodeMode = (searchParams.get('nodeMode') === 'local' ? 'local' : 'gateway') as 'gateway' | 'local';
+  const customUrl = searchParams.get('customUrl') || '';
+  const customRpc: CustomRpcConfig | null = customUrl ? { url: customUrl } : null;
 
   if (!query) {
     return NextResponse.json({ error: 'Query parameter (block height or hash) is required' }, { status: 400 });
@@ -15,16 +16,16 @@ export async function GET(req: NextRequest) {
 
   const trimmedQuery = query.trim();
 
-  // === 1. Query Zcash RPC (Gateway or Local Node) ===
+  // === 1. Query Zcash RPC (Custom Node or Cloud Gateway) ===
   try {
     let blockHash = trimmedQuery;
     if (/^\d+$/.test(trimmedQuery)) {
-      const hashRes = await callZcashRpc<string>('getblockhash', [parseInt(trimmedQuery, 10)], network, nodeMode);
+      const hashRes = await callZcashRpc<string>('getblockhash', [parseInt(trimmedQuery, 10)], network, customRpc);
       if (hashRes.result) {
         blockHash = hashRes.result;
       }
     }
-    const blockRes = await callZcashRpc('getblock', [blockHash, 1], network, nodeMode);
+    const blockRes = await callZcashRpc('getblock', [blockHash, 1], network, customRpc);
     if (blockRes.result && blockRes.result.hash) {
       return NextResponse.json({
         source: 'node',
@@ -81,7 +82,7 @@ export async function GET(req: NextRequest) {
         }
       }
     } catch (err) {
-      // Indexer also failed
+      // Indexer failed
     }
   }
 

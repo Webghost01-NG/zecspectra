@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { callZcashRpc, RPC_ALLOWLIST } from '@/lib/zcash-rpc';
+import { callZcashRpc, RPC_ALLOWLIST, CustomRpcConfig } from '@/lib/zcash-rpc';
 
 export const dynamic = 'force-dynamic';
 
-// Simple in-memory rate limiter (per-IP, 45 req/min)
+// Simple in-memory rate limiter (per-IP, 60 req/min)
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-const RATE_LIMIT = 45;
+const RATE_LIMIT = 60;
 const RATE_WINDOW_MS = 60_000;
 
 function checkRateLimit(ip: string): boolean {
@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json();
-    const { method, params, network, nodeMode } = body;
+    const { method, params, network, customRpc } = body;
 
     // Validate method
     if (!method || typeof method !== 'string') {
@@ -75,9 +75,9 @@ export async function POST(req: NextRequest) {
       );
     }
     const validatedNetwork = (network === 'testnet' ? 'testnet' : 'mainnet') as 'mainnet' | 'testnet';
-    const validatedMode = (nodeMode === 'local' ? 'local' : 'gateway') as 'gateway' | 'local';
+    const validatedCustomRpc = customRpc && typeof customRpc === 'object' ? (customRpc as CustomRpcConfig) : null;
 
-    const result = await callZcashRpc(method, validatedParams, validatedNetwork, validatedMode);
+    const result = await callZcashRpc(method, validatedParams, validatedNetwork, validatedCustomRpc);
     return NextResponse.json(result);
   } catch (err: any) {
     console.error('[RPC Route Error]', err.message);

@@ -49,7 +49,7 @@ const PRESET_METHODS = [
 
 export const RpcPlayground: React.FC<{
   network?: 'mainnet' | 'testnet';
-  nodeMode?: 'gateway' | 'local';
+  nodeMode?: 'gateway' | 'local' | 'custom';
 }> = ({ network = 'mainnet', nodeMode = 'gateway' }) => {
   const [method, setMethod] = useState<string>('getblockchaininfo');
   const [paramsInput, setParamsInput] = useState<string>('[]');

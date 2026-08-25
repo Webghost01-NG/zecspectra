@@ -212,76 +212,69 @@ async function callCloudGatewayRpc<T = any>(
  * If mode is 'local', sends directly to configured Zcash node (Zebra/zcashd).
  * If mode is 'gateway' or if node fails, uses Cloud RPC Gateway.
  */
+export interface CustomRpcConfig {
+  url?: string;
+  user?: string;
+  password?: string;
+}
+
+/**
+ * Send a JSON-RPC 2.0 call to a Zcash node.
+ * Supports:
+ * 1. Custom user-specified RPC endpoint (if provided)
+ * 2. 24/7 Live Cloud RPC Gateway (Default & automatic fallback)
+ */
 export async function callZcashRpc<T = any>(
   method: string,
   params: any[] = [],
   network: 'mainnet' | 'testnet' = 'mainnet',
-  nodeMode: 'gateway' | 'local' = 'gateway'
+  customRpc?: CustomRpcConfig | null
 ): Promise<RpcResponse<T>> {
   const startTime = Date.now();
 
-  // If gateway mode explicitly chosen, use 24/7 cloud gateway
-  if (nodeMode === 'gateway' && network === 'mainnet') {
-    try {
-      return await callCloudGatewayRpc<T>(method, params, network);
-    } catch (err: any) {
-      console.error(`[Cloud Gateway] ${method} error:`, err.message);
-    }
-  }
+  // If a custom RPC URL is provided by the user, query that specific endpoint
+  const targetUrl = customRpc?.url?.trim();
+  if (targetUrl) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 6000);
 
-  // Otherwise query the direct node (Zebra / zcashd)
-  const rpcUrl = network === 'testnet' ? ZCASH_TESTNET_RPC : ZCASH_MAINNET_RPC;
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 6000);
-
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-  };
-
-  if (process.env.ZCASH_RPC_USER && process.env.ZCASH_RPC_PASSWORD) {
-    const auth = Buffer.from(
-      `${process.env.ZCASH_RPC_USER}:${process.env.ZCASH_RPC_PASSWORD}`
-    ).toString('base64');
-    headers['Authorization'] = `Basic ${auth}`;
-  }
-
-  try {
-    const res = await fetch(rpcUrl, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({
-        jsonrpc: '2.0',
-        id: `zecspectra-${Date.now()}`,
-        method,
-        params,
-      }),
-      signal: controller.signal,
-    });
-
-    clearTimeout(timeoutId);
-
-    if (!res.ok) {
-      throw new Error(`RPC HTTP ${res.status}: ${res.statusText}`);
-    }
-
-    const data = await res.json();
-    return {
-      ...data,
-      durationMs: Date.now() - startTime,
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
     };
-  } catch (err: any) {
-    clearTimeout(timeoutId);
-    console.error(`[Direct Node RPC] ${method} failed on ${rpcUrl}:`, err.message);
 
-    // If local query failed but we are on mainnet and not strictly in local mode, fallback to gateway
-    if (network === 'mainnet' && nodeMode !== 'local') {
-      return await callCloudGatewayRpc<T>(method, params, network);
+    if (customRpc?.user && customRpc?.password) {
+      const auth = Buffer.from(`${customRpc.user}:${customRpc.password}`).toString('base64');
+      headers['Authorization'] = `Basic ${auth}`;
     }
 
-    throw new Error(
-      err.name === 'AbortError'
-        ? 'Zcash node did not respond within 6 seconds.'
-        : 'Zcash node is not reachable.'
-    );
+    try {
+      const res = await fetch(targetUrl, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: `custom-${Date.now()}`,
+          method,
+          params,
+        }),
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      if (res.ok) {
+        const data = await res.json();
+        return {
+          ...data,
+          durationMs: Date.now() - startTime,
+        };
+      }
+    } catch (err: any) {
+      clearTimeout(timeoutId);
+      console.warn(`[Custom Node RPC] ${method} failed on ${targetUrl}:`, err.message);
+    }
   }
+
+  // Otherwise, use the built-in 24/7 Live Zcash Cloud RPC Gateway
+  return await callCloudGatewayRpc<T>(method, params, network);
 }

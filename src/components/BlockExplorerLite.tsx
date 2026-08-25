@@ -7,7 +7,7 @@ import { BlockHeader } from '@/types/zcash';
 interface BlockExplorerLiteProps {
   currentHeight: number;
   network?: 'mainnet' | 'testnet';
-  nodeMode?: 'gateway' | 'local';
+  nodeMode?: 'gateway' | 'local' | 'custom';
 }
 
 export const BlockExplorerLite: React.FC<BlockExplorerLiteProps> = ({

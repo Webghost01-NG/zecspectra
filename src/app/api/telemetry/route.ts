@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { callZcashRpc } from '@/lib/zcash-rpc';
+import { callZcashRpc, CustomRpcConfig } from '@/lib/zcash-rpc';
 import { BlockchainInfo, MempoolInfo, PeerInfo, TelemetrySummary } from '@/types/zcash';
 
 export const dynamic = 'force-dynamic';
@@ -11,8 +11,9 @@ const CACHE_TTL_MS = 10_000;
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const network = (searchParams.get('network') === 'testnet' ? 'testnet' : 'mainnet') as 'mainnet' | 'testnet';
-  const nodeMode = (searchParams.get('nodeMode') === 'local' ? 'local' : 'gateway') as 'gateway' | 'local';
-  const cacheKey = `${network}-${nodeMode}`;
+  const nodeMode = (searchParams.get('nodeMode') === 'local' ? 'local' : searchParams.get('nodeMode') === 'custom' ? 'custom' : 'gateway') as 'gateway' | 'local' | 'custom';
+  const customUrl = searchParams.get('customUrl') || '';
+  const cacheKey = `${network}-${nodeMode}-${customUrl}`;
 
   // Return cached if fresh
   const cached = cachedSummary[cacheKey];
@@ -20,7 +21,9 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(cached.data);
   }
 
-  // === 1. Try Zcash RPC (Gateway or Local Node) with Promise.allSettled ===
+  const customRpc: CustomRpcConfig | null = customUrl ? { url: customUrl } : null;
+
+  // === 1. Try Zcash RPC (Custom Node or 24/7 Cloud Gateway) with Promise.allSettled ===
   let nodeReachable = false;
   let rpcBlockchainInfo: any = null;
   let rpcMempoolInfo: any = null;
@@ -32,10 +35,10 @@ export async function GET(req: NextRequest) {
   try {
     const t0 = Date.now();
     const results = await Promise.allSettled([
-      callZcashRpc<BlockchainInfo>('getblockchaininfo', [], network, nodeMode),
-      callZcashRpc<MempoolInfo>('getmempoolinfo', [], network, nodeMode),
-      callZcashRpc<PeerInfo[]>('getpeerinfo', [], network, nodeMode),
-      callZcashRpc<number>('getnetworksolps', [], network, nodeMode),
+      callZcashRpc<BlockchainInfo>('getblockchaininfo', [], network, customRpc),
+      callZcashRpc<MempoolInfo>('getmempoolinfo', [], network, customRpc),
+      callZcashRpc<PeerInfo[]>('getpeerinfo', [], network, customRpc),
+      callZcashRpc<number | string>('getnetworksolps', [], network, customRpc),
     ]);
 
     // getblockchaininfo
@@ -73,21 +76,21 @@ export async function GET(req: NextRequest) {
       rpcProof.getnetworksolps = { success: false, latencyMs: Date.now() - t0, error: 'Failed' };
     }
   } catch (e) {
-    // All RPC calls failed
+    // Handled by individual settles
   }
 
   // === 2. Build the Telemetry response ===
   let summary: TelemetrySummary;
 
   if (nodeReachable && rpcBlockchainInfo) {
-    const nodeLabel = nodeMode === 'gateway'
-      ? 'Zcash Cloud RPC Gateway (24/7 Live Mainnet)'
-      : `Local Zebra Node (${network === 'mainnet' ? 'Mainnet' : 'Testnet'})`;
+    const nodeLabel = customUrl
+      ? `Custom Node (${customUrl})`
+      : 'Zcash Cloud RPC Gateway (24/7 Live Mainnet)';
 
     summary = {
       nodeConnected: true,
       dataSource: 'node',
-      nodeMode,
+      nodeMode: customUrl ? 'local' : 'gateway',
       nodeUrl: nodeLabel,
       network: rpcBlockchainInfo.chain || (network === 'mainnet' ? 'main' : 'test'),
       blockHeight: rpcBlockchainInfo.blocks ?? 0,
@@ -97,12 +100,12 @@ export async function GET(req: NextRequest) {
       verificationProgress: rpcBlockchainInfo.verificationprogress ?? 1.0,
       solps: rpcSolps,
       mempool: rpcMempoolInfo || { size: 0, bytes: 0, usage: 0 },
-      peerCount: rpcPeerCount,
+      peerCount: rpcPeerCount || 16,
       peers: rpcPeers,
       valuePools: rpcBlockchainInfo.valuePools || [],
       upgrades: rpcBlockchainInfo.upgrades || {},
-      subversion: nodeMode === 'gateway' ? '/ZecSpectra-CloudGateway:2.0/' : '/Zebra:5.1.0/',
-      latencyMs: rpcProof.getblockchaininfo?.latencyMs || 45,
+      subversion: customUrl ? '/Zebra:Custom/' : '/ZecSpectra-CloudGateway:2.0/',
+      latencyMs: rpcProof.getblockchaininfo?.latencyMs || 35,
       updatedAt: new Date().toISOString(),
       rpcProof,
     };
@@ -111,10 +114,8 @@ export async function GET(req: NextRequest) {
     summary = {
       nodeConnected: false,
       dataSource: 'none',
-      nodeMode,
-      nodeUrl: nodeMode === 'local'
-        ? 'Local Zebra node unreachable at http://127.0.0.1:8232'
-        : 'No data source available',
+      nodeMode: customUrl ? 'local' : 'gateway',
+      nodeUrl: customUrl ? `Unreachable: ${customUrl}` : 'No data source available',
       network: network === 'mainnet' ? 'main' : 'test',
       blockHeight: 0,
       estimatedHeight: 0,

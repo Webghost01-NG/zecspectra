@@ -1,17 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { callZcashRpc } from '@/lib/zcash-rpc';
+import { callZcashRpc, CustomRpcConfig } from '@/lib/zcash-rpc';
 
 export const dynamic = 'force-dynamic';
 
-// Per-network & mode cache to prevent testnet/mode cross-data leakage
+// Per-network cache to prevent testnet/mode cross-data leakage
 const txCache: Record<string, { data: any; at: number }> = {};
 const TX_CACHE_TTL = 10_000;
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const network = (searchParams.get('network') === 'testnet' ? 'testnet' : 'mainnet') as 'mainnet' | 'testnet';
-  const nodeMode = (searchParams.get('nodeMode') === 'local' ? 'local' : 'gateway') as 'gateway' | 'local';
-  const cacheKey = `${network}-${nodeMode}`;
+  const customUrl = searchParams.get('customUrl') || '';
+  const cacheKey = `${network}-${customUrl}`;
 
   // Return cached per-network/mode
   const cached = txCache[cacheKey];
@@ -19,21 +19,22 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(cached.data);
   }
 
-  // === 1. Try Zcash RPC (Gateway or Local Node) ===
+  const customRpc: CustomRpcConfig | null = customUrl ? { url: customUrl } : null;
+
+  // === 1. Try Zcash RPC (Custom Node or 24/7 Cloud Gateway) ===
   try {
-    const infoRes = await callZcashRpc('getblockchaininfo', [], network, nodeMode);
+    const infoRes = await callZcashRpc('getblockchaininfo', [], network, customRpc);
     if (infoRes.result && infoRes.result.blocks > 0) {
       const bestHash = infoRes.result.bestblockhash;
       const blockHeight = infoRes.result.blocks;
-      const blockRes = await callZcashRpc('getblock', [bestHash, 1], network, nodeMode);
+      const blockRes = await callZcashRpc('getblock', [bestHash, 1], network, customRpc);
       const block = blockRes.result;
       if (block && Array.isArray(block.tx)) {
         const result = {
           source: 'node',
           network,
-          nodeMode,
           transactions: block.tx.map((txid: string, idx: number) => ({
-            txid,
+            txid: typeof txid === 'string' ? txid : (txid as any).hash,
             height: blockHeight,
             blockHash: bestHash,
             time: new Date(block.time * 1000).toISOString(),
@@ -78,7 +79,6 @@ export async function GET(req: NextRequest) {
               const result = {
                 source: 'indexer',
                 network,
-                nodeMode,
                 transactions: bd.transactions.map((txid: string, idx: number) => ({
                   txid: typeof txid === 'string' ? txid : (txid as any).hash,
                   height: indexedHeight,
@@ -106,7 +106,6 @@ export async function GET(req: NextRequest) {
   const emptyResult = {
     source: 'none',
     network,
-    nodeMode,
     transactions: [],
     blockHeight: 0,
     bestHash: '',
@@ -114,7 +113,7 @@ export async function GET(req: NextRequest) {
     txCount: 0,
     updatedAt: new Date().toISOString(),
     error: network === 'testnet'
-      ? 'No testnet node connected. Configure ZCASH_TESTNET_RPC to see testnet transactions.'
+      ? 'No testnet node connected. Configure your testnet node in Node Settings.'
       : 'No data source available for transaction stream.',
   };
   return NextResponse.json(emptyResult);
